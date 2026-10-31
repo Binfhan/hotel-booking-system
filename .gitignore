@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next.js build output
+.next/
+**/.next/
+out/
+
+# Maven / Java build output
+target/
+**/target/
+*.class
+*.jar
+*.war
+
+# Environment & IDE
+.env
+.env.*
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
