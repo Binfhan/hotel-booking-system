@@ -1,85 +1,137 @@
 # BÁO CÁO ĐỒ ÁN MÔN HỌC: MẪU THIẾT KẾ PHẦN MỀM (DESIGN PATTERNS)
-## ĐỀ TÀI (DỰ ÁN 2): HỆ THỐNG QUẢN LÝ ĐẶT PHÒNG KHÁCH SẠN (HOTEL BOOKING MANAGEMENT SYSTEM)
+## ĐỀ TÀI: HỆ THỐNG QUẢN LÝ ĐẶT PHÒNG KHÁCH SẠN TRỰC TUYẾN (HOTEL BOOKING MANAGEMENT SYSTEM)
 
 - **Kiến trúc & Công nghệ sử dụng**:
-  - **Backend (`Controller` & `Model`)**: Java 17/21, Spring Boot 3.2.5 (Spring Web MVC, Spring Data JPA, Spring Security + JWT, Bean Validation).
-  - **Frontend (`View`)**: Next.js 14 (App Router), TypeScript (Strict Mode), Tailwind CSS (Giao diện User Portal & Admin Portal có Sidebar độc lập).
-  - **Cơ sở dữ liệu**: MySQL 8.0 (`hotel_booking_db` — 10 bảng chuẩn hóa 3NF).
+  - **Backend (`Controller` & `Model`)**: Java 17/21, Spring Boot 3.2.5 (Spring Web MVC, Spring Data JPA, Spring Security + JWT, Spring Mail SMTP `JavaMailSender`, Bean Validation).
+  - **Frontend (`View`)**: Next.js 14 (App Router), TypeScript (Strict Mode), Tailwind CSS (Giao diện User Portal & Admin Portal có Sidebar độc lập, bộ chọn lịch chuẩn Việt Nam `dd/MM/yyyy` `VnDateInput`, cổng thanh toán trực tuyến VietQR & Thẻ Sandbox).
+  - **Cơ sở dữ liệu**: MySQL 8.0 (`hotel_booking_db` — 10 bảng chuẩn hóa 3NF, hỗ trợ lưu trữ hình ảnh đa nguồn `LONGTEXT`).
   - **Kiểm thử tự động**: JUnit 5 & Spring Boot Integration Test (`DesignPatternsIntegrationTest`).
-- **Số lượng Design Patterns hiện thực hóa**: **07 mẫu thiết kế** bao phủ đầy đủ 3 nhóm GoF:
-  1. **Nhóm Creational (02 mẫu)**: *Builder Pattern*, *Factory Method Pattern*.
-  2. **Nhóm Structural (02 mẫu)**: *Decorator Pattern*, *Facade Pattern*.
-  3. **Nhóm Behavioral (03 mẫu)**: *Strategy Pattern*, *State Pattern*, *Observer Pattern*.
+- **Số lượng Design Patterns hiện thực hóa**: **07 mẫu thiết kế** bao phủ đầy đủ 3 nhóm GoF (*Gang of Four*):
+  1. **Nhóm Khởi tạo — Creational Patterns (02 mẫu)**: *Builder Pattern*, *Factory Method Pattern*.
+  2. **Nhóm Cấu trúc — Structural Patterns (02 mẫu)**: *Decorator Pattern*, *Facade Pattern*.
+  3. **Nhóm Hành vi — Behavioral Patterns (03 mẫu)**: *Strategy Pattern*, *State Pattern*, *Observer Pattern*.
 
 ---
 
-## LỜI MỞ ĐẦU & ĐẶT VẤN ĐỀ BÁO CÁO VỚI GIẢNG VIÊN
-
-Kính thưa Giảng viên,
-
-Trong quá trình khảo sát và xây dựng **Hệ thống Quản lý Đặt phòng Khách sạn trực tuyến**, bài toán đặt ra không chỉ dừng lại ở các thao tác thêm/sửa/xóa (CRUD) dữ liệu phòng hay đơn đặt phòng, mà còn chứa đựng nhiều nghiệp vụ biến đổi phức tạp trong thực tế:
-1. **Bài toán khởi tạo đối tượng phức tạp**: Bộ lọc tìm kiếm phòng có tới 8–9 tiêu chí tùy chọn; đơn đặt phòng cần gom nhiều thông tin từ khách hàng, lịch nhận/trả phòng, dịch vụ đi kèm, mã giảm giá và phương thức thanh toán. Bên cạnh đó, mỗi hạng phòng (`STANDARD`, `DELUXE`, `SUITE` hoặc hạng phòng mới do Admin cấu hình trong mục *Quản lý Hạng phòng*) lại có bộ thông số mặc định riêng.
-2. **Bài toán tính giá động và điều phối quy trình**: Khi khách đặt phòng, khách có thể tùy chọn thêm bất kỳ tổ hợp dịch vụ phụ trợ nào (*Buffet sáng, Xe đưa đón sân bay, Giường phụ, Spa*). Quy trình đặt phòng đòi hỏi sự phối hợp của 6–7 dịch vụ con khác nhau.
-3. **Bài toán hành vi, trạng thái và thông báo**: Hệ thống có nhiều loại mã giảm giá (giảm theo %, giảm số tiền cố định, giảm theo mùa kèm điều kiện áp dụng cho từng hạng phòng hoặc tất cả các phòng), nhiều phương thức thanh toán, và một vòng đời trạng thái đơn đặt phòng chặt chẽ (`PENDING` $\rightarrow$ `CONFIRMED` $\rightarrow$ `CHECKED_IN` $\rightarrow$ `CHECKED_OUT` hoặc `CANCELLED`).
-
-Nếu tiếp cận theo lối lập trình thủ tục thông thường (sử dụng hàng loạt câu lệnh rẽ nhánh `if-else`, `switch-case` và gọi trực tiếp giữa các lớp), mã nguồn sẽ nhanh chóng rơi vào tình trạng phụ thuộc chặt (*Tight Coupling*), vi phạm nghiêm trọng các nguyên lý **SOLID** và rất khó bảo trì khi khách sạn mở rộng quy mô. Do đó, trong đồ án này, em đã nghiên cứu và áp dụng **5 nguyên lý SOLID** cùng **07 mẫu thiết kế (Design Patterns)** thuộc đủ 3 nhóm *Creational, Structural, Behavioral* để giải quyết triệt để các vấn đề nêu trên.
-
----
-
-## CHƯƠNG I: TỔNG QUAN ĐỀ TÀI, PHÂN TÍCH YÊU CẦU & ĐẶC TẢ USE CASE
-
-### 1.1. Khảo sát bối cảnh, Mục tiêu, Phạm vi & Đối tượng người dùng
-
-#### A. Khảo sát bối cảnh thực tế
-Trong ngành dịch vụ lưu trú (*Hospitality*), quy trình quản lý danh mục phòng, hạng phòng, tính giá linh hoạt (theo mùa, mã giảm giá theo loại phòng, dịch vụ đi kèm) và theo dõi trạng thái lưu trú từ lúc đặt phòng đến lúc trả phòng đòi hỏi độ chính xác và tính toàn vẹn dữ liệu rất cao.
-
-#### B. Mục tiêu của hệ thống
-- Xây dựng hoàn chỉnh ứng dụng web **Quản lý Đặt phòng Khách sạn** theo kiến trúc **MVC tách rời (Decoupled Client–Server)** với **Spring Boot REST API + MySQL** và **Next.js App Router**.
-- Hiện thực hóa tự nhiên và chuẩn xác **5 nguyên lý SOLID** cùng **07 Design Patterns** vào các chức năng cốt lõi của cả phân hệ Khách hàng (*User*) và Quản trị viên (*Admin*).
-
-#### C. Phạm vi bài toán & Đối tượng người dùng (Actors)
-1. **Guest (Khách vãng lai)**: Xem danh sách phòng, tìm kiếm theo tên/địa điểm, lọc phòng theo hạng phòng, số lượng khách, khoảng giá (`minPrice` – `maxPrice`), ngày nhận/trả phòng; xem chi tiết phòng, hình ảnh, loại giường, sức chứa, tiện nghi; đăng ký và đăng nhập tài khoản.
-2. **Customer / User (Khách hàng đã đăng nhập)**: Kế thừa toàn bộ quyền của Guest; đặt phòng trực tuyến, chọn dịch vụ phụ trợ (*Buffet sáng, Đưa đón sân bay, Giường phụ, Spa*), áp dụng mã giảm giá theo hạng phòng, thanh toán trực tuyến, xem lịch sử & chi tiết booking, nhận thông báo tự động (kèm đánh dấu đã đọc) và hủy phòng (khi đơn ở trạng thái cho phép).
-3. **Administrator (Quản trị viên)**: Quản trị hệ thống trên giao diện **Admin Portal độc lập có Sidebar bên trái** gồm 6 phân hệ:
-   - **Dashboard thống kê**: Thống kê tổng số phòng, tổng khách hàng, tổng booking theo trạng thái, tổng doanh thu và danh sách đơn gần nhất.
-   - **Quản lý Booking & Thanh toán**: Xem chi tiết đơn & thông tin khách đặt, chuyển đổi trạng thái đơn (`CONFIRM`, `CHECK_IN`, `CHECK_OUT`, `CANCEL`), cập nhật trạng thái thanh toán (`PAID`, `PENDING`, `REFUNDED`).
-   - **Quản lý Phòng**: Thêm phòng mới (tự động lấy cấu hình từ Hạng phòng qua Factory), sửa, xóa, lọc phòng theo từ khóa, địa điểm, hạng phòng, trạng thái và mức giá.
-   - **Quản lý Hạng phòng**: Thêm, sửa, xóa các hạng phòng (`STANDARD`, `DELUXE`, `SUITE`, `PRESIDENTIAL`...), liên kết trực tiếp với chức năng Thêm phòng mới và phạm vi áp dụng Voucher.
-   - **Quản lý Voucher**: Thêm, sửa, xóa mã giảm giá; cấu hình phạm vi áp dụng cho **Tất cả hạng phòng (`ALL`)** hoặc **chỉ các hạng phòng được chọn**.
-   - **Quản lý Người dùng**: Thêm người dùng mới, sửa thông tin, phân quyền `ROLE_USER` / `ROLE_ADMIN`, khóa/mở khóa tài khoản, xóa tài khoản và **Xem chi tiết hồ sơ + lịch sử đặt phòng của từng người dùng**.
+## MỤC LỤC BÁO CÁO
+1. **CHƯƠNG I: TỔNG QUAN VỀ ĐỀ TÀI VÀ BÀI TOÁN THỰC TẾ**
+   - 1.1. Bối cảnh thực tế, Mục tiêu và Phạm vi đề tài
+   - 1.2. Phân tích bài toán nghiệp vụ & Lý do cần áp dụng Design Patterns + SOLID
+   - 1.3. Đặc tả Yêu cầu Chức năng (FR) & Phi chức năng (NFR)
+   - 1.4. Sơ đồ Use Case Tổng quát & Đặc tả chi tiết các Ca sử dụng cốt lõi
+2. **CHƯƠNG II: CƠ SỞ LÝ THUYẾT VÀ KIẾN TRÚC HỆ THỐNG**
+   - 2.1. Cơ sở lý thuyết 3 nhóm Design Patterns (GoF)
+   - 2.2. Phân tích chuyên sâu 5 nguyên lý SOLID áp dụng trong mã nguồn dự án
+   - 2.3. Kiến trúc tổng thể hệ thống MVC tách rời (Decoupled Client–Server)
+   - 2.4. Thiết kế Cơ sở dữ liệu quan hệ (ERD 10 bảng chuẩn 3NF trên MySQL 8.0)
+3. **CHƯƠNG III: PHÂN TÍCH VÀ THIẾT KẾ CHI TIẾT CÁC MẪU THIẾT KẾ ÁP DỤNG**
+   - 3.1. Bảng ánh xạ tổng hợp 07 Design Patterns vào các tính năng nghiệp vụ
+   - 3.2. Sơ đồ Luồng xử lý (Workflow) của từng nhóm Design Patterns
+   - 3.3. Mẫu 1 (Creational): *Builder Pattern* (`BookingOrder`, `RoomSearchCriteria`)
+   - 3.4. Mẫu 2 (Creational): *Factory Method Pattern* (`RoomFactory`, `RoomTemplate`, `RoomCategory`)
+   - 3.5. Mẫu 3 (Structural): *Decorator Pattern* (`BookingCostComponent`, `BookingServiceDecorator`)
+   - 3.6. Mẫu 4 (Structural): *Facade Pattern* (`BookingFacade`)
+   - 3.7. Mẫu 5 (Behavioral): *Strategy Pattern* (`DiscountStrategy`, `PaymentStrategy`)
+   - 3.8. Mẫu 6 (Behavioral): *State Pattern* (`BookingState`, `BookingStateResolver` & Đồng bộ trạng thái phòng)
+   - 3.9. Mẫu 7 (Behavioral): *Observer Pattern* (`BookingObserver`, `EmailNotificationObserver` SMTP & In-App)
+4. **CHƯƠNG IV: CÀI ĐẶT, THỬ NGHIỆM VÀ ĐÁNH GIÁ KẾT QUẢ**
+   - 4.1. Cấu trúc thư mục dự án & Hướng dẫn cài đặt, vận hành hệ thống
+   - 4.2. Các tính năng thực tế nổi bật đã hoàn thiện và nâng cấp
+   - 4.3. Bộ 12 Kịch bản Kiểm thử thực nghiệm (Test Cases) & Kết quả JUnit 5
+   - 4.4. Bảng so sánh Ưu/Nhược điểm khi áp dụng Design Patterns & Đánh giá kết quả
 
 ---
 
-### 1.2. Phân tích Yêu cầu Chức năng & Phi chức năng
+## CHƯƠNG I: TỔNG QUAN VỀ ĐỀ TÀI VÀ BÀI TOÁN THỰC TẾ
+
+### 1.1. Bối cảnh thực tế, Mục tiêu và Phạm vi đề tài
+
+#### A. Bối cảnh thực tế
+Trong lĩnh vực kinh doanh dịch vụ lưu trú (*Hospitality & Hotel Management*), quy trình vận hành của một khách sạn hiện đại không chỉ dừng lại ở việc lưu trữ danh sách phòng tĩnh mà đòi hỏi sự phối hợp chặt chẽ, tức thời giữa nhiều nghiệp vụ động:
+- Khách hàng tìm kiếm phòng trống theo nhiều tiêu chí kết hợp (địa điểm, hạng phòng, số lượng khách, ngân sách tối thiểu/tối đa, ngày nhận và trả phòng định dạng `dd/MM/yyyy`).
+- Khách hàng tùy chọn linh hoạt các dịch vụ tiện ích đi kèm (*Buffet sáng, Xe đưa đón sân bay, Giường phụ, Spa*), áp dụng các chương trình khuyến mãi (Voucher theo mùa, theo phần trăm hoặc tiền mặt có giới hạn theo từng hạng phòng) và thanh toán qua nhiều kênh (Quét mã QR Ví điện tử VietQR, Thẻ tín dụng quốc tế hoặc Thanh toán tại khách sạn).
+- Hệ thống phải tự động kiểm soát vòng đời trạng thái của đơn đặt phòng (`PENDING` $\rightarrow$ `CONFIRMED` $\rightarrow$ `CHECKED_IN` $\rightarrow$ `CHECKED_OUT` / `CANCELLED`), đồng bộ tức thời với **trạng thái vật lý của phòng** (`AVAILABLE` $\leftrightarrow$ `OCCUPIED`) và gửi hóa đơn điện tử qua Email + thông báo trên ứng dụng cho khách hàng.
+
+#### B. Mục tiêu của đề tài
+1. **Về mặt công nghệ & kiến trúc**: Xây dựng hệ thống Web Full-Stack hoàn chỉnh theo kiến trúc **MVC tách rời (Decoupled Client–Server)** sử dụng **Spring Boot 3.2.5 RESTful API + MySQL 8.0** ở tầng Backend và **Next.js 14 (App Router) + TypeScript + Tailwind CSS** ở tầng Frontend.
+2. **Về mặt kỹ thuật phần mềm**: Vận dụng chuẩn xác **5 nguyên lý SOLID** và **07 mẫu thiết kế (Design Patterns)** thuộc cả 3 nhóm *Creational, Structural, Behavioral* để giải quyết các bài toán nghiệp vụ thực tế, loại bỏ mã nguồn phụ thuộc chặt (*Tight Coupling*) và các cấu trúc rẽ nhánh `if-else` / `switch-case` phức tạp.
+
+#### C. Phạm vi đề tài & Đối tượng người dùng (Actors)
+Hệ thống phục vụ 3 nhóm tác nhân chính:
+1. **Guest (Khách vãng lai)**:
+   - Tra cứu danh sách phòng, lọc đa tiêu chí (Từ khóa, Địa điểm, Hạng phòng, Số khách, Khoảng giá `minPrice` – `maxPrice`, Ngày nhận/trả phòng `dd/MM/yyyy`).
+   - Xem chi tiết từng phòng, bộ sưu tập hình ảnh, loại giường, sức chứa, tiện nghi và bảng tạm tính chi phí trực tiếp (*Live Price Breakdown*).
+   - Đăng ký tài khoản mới và đăng nhập.
+2. **Customer / User (Khách hàng thành viên)**:
+   - Thực hiện đặt phòng trực tuyến, tích chọn tổ hợp dịch vụ phụ trợ (*Add-on Services*), áp dụng mã giảm giá (*Voucher*).
+   - Trải nghiệm **Cổng thanh toán trực tuyến mô phỏng (Online Payment Gateway Modal)**: Quét mã **VietQR động** hiển thị đúng số tiền & mã phòng đối với Ví điện tử (`E_WALLET`) hoặc nhập thông tin thẻ trên cổng **Sandbox Visa/Mastercard** đối với Thẻ tín dụng (`CREDIT_CARD`), hoặc chọn Thanh toán tại quầy (`PAY_AT_HOTEL`).
+   - Nhận **Email hóa đơn xác nhận định dạng HTML** gửi trực tiếp vào hộp thư cá nhân và thông báo thời gian thực trên hệ thống (*In-App Notification*).
+   - Quản lý lịch sử đặt phòng cá nhân, xem bóc tách chi phí và chủ động hủy đơn khi đơn ở trạng thái cho phép (`PENDING` hoặc `CONFIRMED`).
+3. **Administrator (Quản trị viên hệ thống)**:
+   - Quản trị toàn diện qua **Admin Portal độc lập có Sidebar bên trái** gồm 6 phân hệ:
+     1. **Dashboard Tổng quan**: Thống kê doanh thu, số lượng phòng theo trạng thái, phân bổ đơn đặt phòng theo vòng đời *State Pattern* và danh sách giao dịch mới nhất.
+     2. **Quản lý Booking & Thanh toán**: Duyệt đơn (`CONFIRM`), Nhận phòng (`CHECK_IN`), Trả phòng (`CHECK_OUT`), Hủy đơn (`CANCEL`) và cập nhật trạng thái thanh toán (`PAID`, `PENDING`, `REFUNDED`).
+     3. **Quản lý Phòng**: Thêm/Sửa/Xóa/Lọc phòng khách sạn; tự động kế thừa cấu hình chuẩn từ Hạng phòng qua *Factory Method Pattern*; hỗ trợ tải ảnh trực tiếp từ máy tính (không giới hạn độ phân giải/MP, tự động tối ưu qua HTML5 Canvas) hoặc dán link chia sẻ bất kỳ (`ibb.co`, `imgur.com`, `drive.google.com`...) kèm ảnh xem trước.
+     4. **Quản lý Hạng phòng**: Thêm/Sửa/Xóa các hạng phòng (`STANDARD`, `DELUXE`, `SUITE`, `VIP_VILLA`...), đồng bộ trực tiếp sang chức năng Tạo phòng và Voucher.
+     5. **Quản lý Voucher**: Thêm/Sửa/Xóa mã giảm giá theo 3 chiến lược (`PERCENTAGE`, `FIXED_AMOUNT`, `SEASONAL`) và cấu hình phạm vi áp dụng cho tất cả phòng (`ALL`) hoặc từng hạng phòng cụ thể.
+     6. **Quản lý Người dùng**: Thêm/Sửa/Xóa tài khoản, phân quyền `ROLE_USER` / `ROLE_ADMIN`, khóa/mở khóa tài khoản và xem hồ sơ chi tiết kèm lịch sử chi tiêu của từng khách hàng.
+
+---
+
+### 1.2. Phân tích bài toán nghiệp vụ & Lý do cần áp dụng Design Patterns + SOLID
+
+Trong quá trình phân tích bài toán thực tế, có **4 thách thức thiết kế lớn** nếu chỉ lập trình theo cách thông thường:
+
+1. **Thách thức 1 — Khởi tạo các đối tượng có nhiều tham số tùy chọn và cấu hình mẫu theo phân loại**:
+   - Yêu cầu tìm kiếm phòng (`RoomSearchCriteria`) và yêu cầu đặt phòng (`BookingOrder`) có từ 8–9 thuộc tính (nhiều thuộc tính có thể `null`). Dùng Constructor truyền thống sẽ dẫn đến *Telescoping Constructor Anti-pattern*, dễ truyền nhầm thứ tự tham số cùng kiểu (`checkInDate` và `checkOutDate`).
+   - Khi Admin tạo phòng mới theo Hạng phòng (`STANDARD`, `DELUXE`, `SUITE` hoặc hạng phòng mới tạo), việc dùng `if-else` để gán giá mặc định, sức chứa, loại giường, tiện nghi sẽ làm `RoomService` bị sửa đổi liên tục mỗi khi khách sạn thêm hạng phòng mới.
+   - $\Rightarrow$ **Giải pháp**: Áp dụng **Builder Pattern** và **Factory Method Pattern** (Nhóm *Creational*).
+
+2. **Thách thức 2 — Tính toán chi phí cộng dồn linh hoạt và điều phối quy trình phức tạp**:
+   - Khách hàng có thể chọn $0, 1$ hoặc nhiều dịch vụ đi kèm (*Buffet sáng, Đưa đón sân bay, Giường phụ, Spa*). Nếu dùng kế thừa tĩnh sẽ tạo ra $2^4 = 16$ lớp con (*Class Explosion*).
+   - Quy trình đặt phòng cần phối hợp 6 hệ thống con: Kiểm tra phòng trống $\rightarrow$ Tính giá phòng & dịch vụ $\rightarrow$ Tính giảm giá Voucher $\rightarrow$ Xử lý thanh toán $\rightarrow$ Chuyển trạng thái đơn & phòng $\rightarrow$ Phát thông báo đa kênh.
+   - $\Rightarrow$ **Giải pháp**: Áp dụng **Decorator Pattern** và **Facade Pattern** (Nhóm *Structural*).
+
+3. **Thách thức 3 — Sự biến thiên của thuật toán tính khuyến mãi và phương thức thanh toán**:
+   - Các loại Voucher (`PERCENTAGE`, `FIXED_AMOUNT`, `SEASONAL`) và phương thức thanh toán (`CREDIT_CARD`, `E_WALLET`, `PAY_AT_HOTEL`) có công thức và quy trình xử lý hoàn toàn khác nhau. Nếu nhồi nhét vào một hàm `switch-case` sẽ vi phạm nguyên lý Đóng/Mở (**OCP**).
+   - $\Rightarrow$ **Giải pháp**: Áp dụng **Strategy Pattern** (Nhóm *Behavioral*).
+
+4. **Thách thức 4 — Kiểm soát trạng thái đơn đặt phòng chặt chẽ, đồng bộ trạng thái phòng và thông báo đa kênh**:
+   - Đơn đặt phòng chỉ được chuyển trạng thái theo luồng hợp lệ (ví dụ: không thể hủy đơn khi khách đã `CHECKED_IN`, không thể `CHECK_IN` khi đơn đã `CANCELLED`), đồng thời phải tự động khóa phòng (`OCCUPIED`) khi xác nhận/nhận phòng và giải phóng phòng (`AVAILABLE`) khi trả phòng/hủy đơn.
+   - Mỗi biến động trạng thái cần thông báo đồng thời qua Web (*In-App*), gửi *Email HTML* qua SMTP và ghi *Audit Log* mà không làm phình to lớp nghiệp vụ chính.
+   - $\Rightarrow$ **Giải pháp**: Áp dụng **State Pattern** và **Observer Pattern** (Nhóm *Behavioral*).
+
+---
+
+### 1.3. Đặc tả Yêu cầu Chức năng (FR) & Phi chức năng (NFR)
 
 #### A. Bảng Yêu cầu Chức năng (Functional Requirements)
 
-| Mã YC | Phân hệ | Tên chức năng | Mô tả chi tiết | Design Pattern áp dụng |
+| Mã YC | Phân hệ | Tên chức năng | Mô tả chi tiết nghiệp vụ | Design Pattern áp dụng |
 | :--- | :--- | :--- | :--- | :--- |
-| **FR-U01** | User | Đăng ký / Đăng nhập / Đăng xuất | Xác thực JWT, mã hóa mật khẩu BCrypt, kiểm tra khóa tài khoản (`isLocked`). | — |
-| **FR-U02** | User | Tìm kiếm & Lọc phòng đa tiêu chí | Lọc theo từ khóa, địa điểm, hạng phòng, số khách tối thiểu, khoảng giá (`minPrice` - `maxPrice`) và ngày `checkIn` - `checkOut`. | **Builder Pattern** (`RoomSearchCriteria`) |
-| **FR-U03** | User | Xem chi tiết phòng & Hình ảnh | Xem bộ sưu tập ảnh, giá/đêm, loại giường, sức chứa, trạng thái và danh sách tiện nghi. | — |
-| **FR-U04** | User | Đặt phòng & Chọn dịch vụ đi kèm | Chọn ngày nhận/trả, số khách, ghi chú và tích chọn dịch vụ phụ trợ (`BREAKFAST`, `AIRPORT_PICKUP`, `EXTRA_BED`, `SPA`) kèm báo giá trực tiếp. | **Builder Pattern** (`BookingOrder`), **Decorator Pattern** (`BookingCostComponent`), **Facade Pattern** (`BookingFacade`) |
-| **FR-U05** | User | Áp dụng mã giảm giá (Voucher) | Kiểm tra hạn dùng, giá trị đơn tối thiểu, hạng phòng áp dụng và tính tiền giảm theo `%`, tiền cố định hoặc mùa lễ. | **Strategy Pattern** (`DiscountStrategy`) |
-| **FR-U06** | User | Thanh toán đơn đặt phòng | Thanh toán qua Thẻ tín dụng (`CREDIT_CARD`), Ví điện tử (`E_WALLET`) hoặc Thanh toán tại khách sạn (`PAY_AT_HOTEL`). | **Strategy Pattern** (`PaymentStrategy`) |
-| **FR-U07** | User | Lịch sử Booking, Hủy đơn & Thông báo | Lọc lịch sử theo trạng thái, xem chi tiết cấu thành giá, hủy đơn (xóa khỏi danh sách hoạt động) và xem/đánh dấu đã đọc thông báo. | **State Pattern** (`BookingState`), **Observer Pattern** (`BookingObserver`) |
-| **FR-A01** | Admin | Xem Dashboard thống kê | Thống kê số phòng (sẵn sàng/bảo trì), số khách hàng, số booking theo trạng thái và tổng doanh thu thực tế. | — |
-| **FR-A02** | Admin | Quản lý Hạng phòng & Phòng (CRUD) | CRUD Hạng phòng (`RoomCategory`); Thêm/Sửa/Xóa/Lọc phòng khách sạn kế thừa thông số mặc định từ Hạng phòng. | **Factory Method Pattern** (`RoomFactory`, `RoomTemplate`) |
-| **FR-A03** | Admin | Quản lý Voucher theo Hạng phòng | CRUD mã giảm giá, chọn phạm vi áp dụng cho tất cả phòng (`ALL`) hoặc danh sách hạng phòng cụ thể. | **Strategy Pattern** (`DiscountContextService`) |
-| **FR-A04** | Admin | Quản lý Booking & Thanh toán | Duyệt đơn (`CONFIRM`), Nhận phòng (`CHECK_IN`), Trả phòng (`CHECK_OUT`), Hủy đơn (`CANCEL`) và cập nhật trạng thái thanh toán. | **Facade Pattern**, **State Pattern**, **Observer Pattern** |
-| **FR-A05** | Admin | Quản lý Người dùng toàn diện | Thêm/Sửa/Xóa User, Phân quyền User/Admin, Khóa/Mở khóa tài khoản, Xem chi tiết lịch sử đặt phòng & tổng chi tiêu của User. | — |
+| **FR-U01** | User | Đăng ký / Đăng nhập / Đăng xuất | Xác thực JWT Stateless, mã hóa mật khẩu BCrypt, kiểm tra trạng thái khóa tài khoản (`isLocked`). | — |
+| **FR-U02** | User | Tìm kiếm & Lọc phòng đa tiêu chí | Lọc theo từ khóa, địa điểm, hạng phòng, số khách, khoảng giá (`minPrice` - `maxPrice`) và ngày nhận/trả (`dd/MM/yyyy`). Tự động loại trừ phòng trùng lịch. | **Builder Pattern** (`RoomSearchCriteria`) |
+| **FR-U03** | User | Xem chi tiết phòng & Báo giá trực tiếp | Xem thông tin phòng, tiện nghi, chọn ngày ở & dịch vụ đi kèm để xem bảng bóc tách chi phí trực tiếp (*Live Preview*). | **Decorator Pattern**, **Facade Pattern** |
+| **FR-U04** | User | Đặt phòng & Chọn dịch vụ phụ trợ | Tích chọn linh hoạt *Buffet sáng, Đưa đón sân bay, Giường phụ, Spa*; tự động bọc chi phí và tạo mô tả hóa đơn chi tiết. | **Builder Pattern** (`BookingOrder`), **Decorator Pattern** (`BookingCostComponent`) |
+| **FR-U05** | User | Áp dụng mã giảm giá (Voucher) | Kiểm tra thời hạn, giá trị đơn tối thiểu, phạm vi hạng phòng áp dụng và tính tiền giảm theo `%`, cố định hoặc mùa lễ. | **Strategy Pattern** (`DiscountStrategy`) |
+| **FR-U06** | User | Thanh toán qua Cổng Online / Tại quầy | Hiển thị Modal quét mã **VietQR** (`E_WALLET`), nhập thẻ **Visa/Mastercard Sandbox** (`CREDIT_CARD`) hoặc trả tại khách sạn (`PAY_AT_HOTEL`). | **Strategy Pattern** (`PaymentStrategy`), **Facade Pattern** |
+| **FR-U07** | User | Nhận Email Hóa đơn & Quản lý Booking | Nhận Email xác nhận HTML qua SMTP & thông báo In-App; xem lịch sử đặt phòng và hủy đơn hợp lệ. | **State Pattern**, **Observer Pattern** |
+| **FR-A01** | Admin | Xem Dashboard thống kê | Thống kê doanh thu thực tế, số phòng sẵn sàng/bảo trì, phân bổ trạng thái đơn đặt phòng và danh sách đơn mới nhất. | — |
+| **FR-A02** | Admin | Quản lý Hạng phòng & Phòng (Đa nguồn ảnh) | CRUD Hạng phòng & Phòng; kế thừa thông số chuẩn từ Hạng phòng; tải ảnh từ máy tính (`LONGTEXT`) hoặc dán link `ibb.co`, `imgur`, `Google Drive`. | **Factory Method Pattern** (`RoomFactory`, `RoomTemplate`) |
+| **FR-A03** | Admin | Quản lý Voucher theo Hạng phòng | CRUD mã giảm giá; cấu hình phạm vi áp dụng cho tất cả phòng (`ALL`) hoặc danh sách hạng phòng cụ thể. | **Strategy Pattern** (`DiscountContextService`) |
+| **FR-A04** | Admin | Quản lý Booking & Đồng bộ trạng thái phòng | Duyệt đơn (`CONFIRM`), Nhận phòng (`CHECK_IN`), Trả phòng (`CHECK_OUT`), Hủy đơn (`CANCEL`); tự động đồng bộ `RoomStatus` (`OCCUPIED` $\leftrightarrow$ `AVAILABLE`). | **Facade Pattern**, **State Pattern**, **Observer Pattern** |
+| **FR-A05** | Admin | Quản lý Người dùng toàn diện | Thêm/Sửa/Xóa User, phân quyền `ROLE_USER`/`ROLE_ADMIN`, khóa/mở khóa tài khoản, xem lịch sử đặt phòng & tổng chi tiêu của từng User. | — |
 
 #### B. Yêu cầu Phi chức năng (Non-Functional Requirements)
-1. **Tính toàn vẹn dữ liệu & Chống trùng lịch đặt phòng**: Đảm bảo một phòng không thể bị đặt trùng bởi 2 đơn hợp lệ trong cùng khoảng ngày (`checkInDate < existingCheckOut AND checkOutDate > existingCheckIn`) với `@Transactional`.
-2. **Bảo mật (Security)**: Phân quyền chặt chẽ qua Spring Security + JWT Filter (`/api/admin/**` chỉ dành cho `ROLE_ADMIN`); từ chối đăng nhập ngay lập tức nếu tài khoản bị khóa (`locked = true`).
-3. **Khả năng bảo trì & mở rộng (Maintainability)**: Tuân thủ 5 nguyên lý SOLID; tách biệt rõ các tầng `Controller` – `Facade` – `Service` – `Patterns` – `Repository`.
-4. **Hiệu năng (Performance)**: Đánh chỉ mục CSDL (`idx_room_search`, `idx_booking_dates`) và tra cứu Strategy/State qua `Map` với độ phức tạp $O(1)$.
+1. **Tính toàn vẹn giao dịch (ACID & Concurrency Control)**: Mọi thao tác đặt phòng và chuyển đổi trạng thái được bao bọc trong `@Transactional`, kiểm tra chồng lấn ngày ở (`checkInDate < existingCheckOut AND checkOutDate > existingCheckIn`) để chống đặt trùng phòng (*Double Booking*).
+2. **Chuẩn hóa bản địa hóa Việt Nam**: Toàn bộ ô chọn ngày (`VnDateInput`) và hiển thị ngày tháng trên hệ thống tuân thủ định dạng **Ngày/Tháng/Năm (`dd/MM/yyyy`)**, tiền tệ định dạng **VNĐ**.
+3. **Bảo mật (Security)**: Phân quyền RBAC qua Spring Security + JWT Filter (`/api/admin/**` yêu cầu `ROLE_ADMIN`).
+4. **Độ mở rộng & Bảo trì (Extensibility)**: Tuân thủ 5 nguyên lý SOLID; tra cứu các chiến lược/trạng thái qua `Map` với độ phức tạp $O(1)$.
 
 ---
 
-### 1.3. Sơ đồ Use Case Tổng quát & Đặc tả Ca sử dụng Cốt lõi
+### 1.4. Sơ đồ Use Case Tổng quát & Đặc tả chi tiết các Ca sử dụng cốt lõi
 
-#### A. Sơ đồ Use Case Tổng quát
 ```mermaid
 flowchart LR
     Guest["👤 Guest (Khách vãng lai)"]
@@ -88,26 +140,26 @@ flowchart LR
 
     Customer -->|"Kế thừa"| Guest
 
-    subgraph UC_Public["Phân hệ Công khai & Tìm kiếm"]
+    subgraph UC_Public["Phân hệ Công khai & Tra cứu"]
         UC1["UC01: Đăng ký / Đăng nhập / Đăng xuất"]
         UC2["UC02: Xem danh sách & Chi tiết phòng"]
         UC3["UC03: Tìm kiếm & Lọc phòng đa tiêu chí (Builder)"]
     end
 
-    subgraph UC_Customer["Phân hệ Đặt phòng & Khách hàng (User Portal)"]
+    subgraph UC_Customer["Phân hệ Khách hàng (User Portal)"]
         UC4["UC04: Đặt phòng & Chọn dịch vụ đi kèm (Decorator + Facade)"]
         UC5["UC05: Áp dụng Voucher theo Hạng phòng (Strategy)"]
-        UC6["UC06: Thanh toán đơn đặt phòng (Strategy)"]
-        UC7["UC07: Xem lịch sử, Chi tiết Booking & Thông báo (Observer)"]
-        UC8["UC08: Hủy đơn đặt phòng (State)"]
+        UC6["UC06: Thanh toán VietQR / Thẻ / Tại quầy (Strategy)"]
+        UC7["UC07: Nhận Email Hóa đơn & Thông báo In-App (Observer)"]
+        UC8["UC08: Hủy đơn đặt phòng & Giải phóng phòng (State)"]
     end
 
     subgraph UC_Admin["Phân hệ Quản trị (Admin Sidebar Portal)"]
         UC9["UC09: Xem Dashboard thống kê & Doanh thu"]
-        UC10["UC10: Quản lý Hạng phòng & Phòng (Factory Method)"]
+        UC10["UC10: Quản lý Hạng phòng & Phòng đa nguồn ảnh (Factory Method)"]
         UC11["UC11: Quản lý Voucher theo Hạng phòng (Strategy)"]
-        UC12["UC12: Quản lý Booking & Chuyển trạng thái (State + Observer)"]
-        UC13["UC13: Quản lý Người dùng & Xem chi tiết lịch sử User"]
+        UC12["UC12: Duyệt / Check-in / Check-out & Đồng bộ trạng thái phòng (State)"]
+        UC13["UC13: Quản lý Người dùng & Xem hồ sơ chi tiêu"]
     end
 
     Guest --> UC1
@@ -116,6 +168,7 @@ flowchart LR
 
     Customer --> UC4
     UC4 -.->|"<<include>>"| UC6
+    UC4 -.->|"<<include>>"| UC7
     UC5 -.->|"<<extend>>"| UC4
     Customer --> UC7
     Customer --> UC8
@@ -128,69 +181,49 @@ flowchart LR
     Admin --> UC13
 ```
 
-#### B. Đặc tả các Ca sử dụng cốt lõi (Core Use Cases)
-
-1. **Đặc tả UC04: Đặt phòng trực tuyến & Chọn dịch vụ đi kèm**
-   - **Tác nhân chính**: Customer (Khách hàng đã đăng nhập).
-   - **Tiền điều kiện**: Tài khoản hợp lệ (không bị khóa); phòng đang ở trạng thái `AVAILABLE` và không trùng lịch.
-   - **Luồng sự kiện chính**:
-     1. Khách hàng chọn ngày nhận phòng (`checkInDate`), ngày trả phòng (`checkOutDate`), số khách (`guestCount`) và ghi chú.
-     2. Khách hàng tích chọn các dịch vụ phụ trợ (`BREAKFAST`, `AIRPORT_PICKUP`, `EXTRA_BED`, `SPA`); giao diện gọi `/api/bookings/preview` để hiển thị bảng bóc tách chi phí trực tiếp.
-     3. Khách hàng chọn/nhập mã giảm giá (`voucherCode`) và phương thức thanh toán (`E_WALLET`, `CREDIT_CARD`, `PAY_AT_HOTEL`), sau đó nhấn **"Xác nhận Đặt phòng"**.
-     4. `BookingController` dùng `BookingOrder.Builder` đóng gói dữ liệu và gọi `BookingFacade.placeBooking(order)`:
-        - Kiểm tra phòng trống & sức chứa (`RoomService`).
-        - Bọc chi phí phòng gốc với chuỗi `BookingServiceDecorator` (**Decorator Pattern**).
-        - Kiểm tra hạng phòng áp dụng và tính giảm giá qua `DiscountContextService` (**Strategy Pattern**).
-        - Thực thi thanh toán qua `PaymentContextService` (**Strategy Pattern**). Nếu thanh toán trực tuyến (`PAID`), tự động kích hoạt `BookingStateResolver.applyAction(CONFIRM)` chuyển đơn sang `CONFIRMED` (**State Pattern**).
-        - Lưu đơn vào MySQL và phát sự kiện `BOOKING_CREATED` qua `BookingEventPublisher` (**Observer Pattern**).
-   - **Luồng ngoại lệ**: Nếu trùng lịch đặt phòng, vượt quá sức chứa hoặc mã Voucher không áp dụng cho hạng phòng đang chọn, hệ thống ném `BusinessRuleException` và hiển thị thông báo tiếng Việt rõ ràng.
-
-2. **Đặc tả UC12: Quản lý Booking & Chuyển đổi trạng thái (Admin & User)**
-   - **Tác nhân**: Administrator (hoặc Customer khi yêu cầu hủy đơn).
-   - **Luồng sự kiện chính**:
-     1. Người dùng gửi yêu cầu chuyển trạng thái (`CONFIRM`, `CHECK_IN`, `CHECK_OUT`, `CANCEL`).
-     2. `BookingFacade.transitionBookingState()` ủy quyền cho `BookingStateResolver` lấy đối tượng `BookingState` ứng với trạng thái hiện tại của đơn:
-        - `PendingState`: Cho phép `confirm()` hoặc `cancel()`. Chặn `checkIn()` và `checkOut()`.
-        - `ConfirmedState`: Cho phép `checkIn()` (đồng thời tự động cập nhật `PaymentStatus = PAID` nếu khách trả tại quầy) hoặc `cancel()`.
-        - `CheckedInState`: Chỉ cho phép `checkOut()`. Tuyệt đối chặn `cancel()`.
-        - `CheckedOutState` / `CancelledState`: Trạng thái kết thúc, từ chối mọi thao tác.
-     3. Nếu hành động là `CANCEL` hợp lệ, hệ thống phát thông báo `BOOKING_CANCELLED` qua **Observer Pattern** và xóa đơn đã hủy khỏi danh sách đặt phòng đang hoạt động để giải phóng lịch phòng ngay lập tức.
-
 ---
 
-## CHƯƠNG II: CƠ SỞ LÝ THUYẾT SOLID, KIẾN TRÚC MVC & THIẾT KẾ CSDL (ERD)
+## CHƯƠNG II: CƠ SỞ LÝ THUYẾT VÀ KIẾN TRÚC HỆ THỐNG
 
-### 2.1. Tổng quan lý thuyết 3 nhóm Design Patterns (GoF)
+### 2.1. Cơ sở lý thuyết 3 nhóm Design Patterns (GoF)
+
+Theo cuốn sách kinh điển *"Design Patterns: Elements of Reusable Object-Oriented Software"* của nhóm tác giả **Gang of Four (GoF)**, các mẫu thiết kế hướng đối tượng được chia thành 3 nhóm chính:
 
 1. **Nhóm Khởi tạo (Creational Patterns)**:
-   - **Bản chất**: Cung cấp các cơ chế khởi tạo đối tượng linh hoạt, che giấu logic khởi tạo phức tạp và tách rời quá trình tạo lập đối tượng khỏi lớp sử dụng nó (*Client*).
-   - **Ý nghĩa**: Giúp hệ thống không bị phụ thuộc cứng vào toán tử `new` và các Constructor cồng kềnh, dễ dàng mở rộng dòng sản phẩm mới.
+   - **Mục đích**: Trừu tượng hóa quá trình khởi tạo đối tượng (`instantiation`), giúp hệ thống độc lập với cách các đối tượng của nó được tạo ra, lắp ráp và biểu diễn.
+   - **Áp dụng trong dự án**:
+     - *Builder Pattern*: Tách rời việc xây dựng đối tượng phức tạp (`BookingOrder`, `RoomSearchCriteria`) khỏi biểu diễn của nó.
+     - *Factory Method Pattern*: Định nghĩa giao diện tạo đối tượng (`RoomFactory`, `RoomTemplate`), tự động hóa việc cấu hình thực thể `Room` theo từng hạng phòng.
 2. **Nhóm Cấu trúc (Structural Patterns)**:
-   - **Bản chất**: Tập trung vào cách kết hợp các lớp và các đối tượng để hình thành các cấu trúc lớn hơn, đồng thời giữ cho cấu trúc đó mềm dẻo, hiệu quả và che giấu sự phức tạp nội tại của các hệ thống con.
-   - **Ý nghĩa**: Cho phép mở rộng tính năng của đối tượng lúc runtime mà không làm bùng nổ cây kế thừa, đồng thời giảm sự phụ thuộc giữa tầng giao tiếp (*Controller*) và tầng nghiệp vụ (*Subsystems*).
+   - **Mục đích**: Giải quyết bài toán kết hợp các lớp và đối tượng để tạo nên các cấu trúc lớn hơn mà vẫn đảm bảo tính mềm dẻo và hiệu quả.
+   - **Áp dụng trong dự án**:
+     - *Decorator Pattern*: Gắn thêm trách nhiệm (chi phí và mô tả dịch vụ phụ trợ) vào đối tượng tiền phòng gốc (`BaseRoomBookingCost`) một cách linh hoạt lúc runtime.
+     - *Facade Pattern*: Cung cấp giao diện thống nhất bậc cao (`BookingFacade`) cho một tập hợp các giao diện trong hệ thống con.
 3. **Nhóm Hành vi (Behavioral Patterns)**:
-   - **Bản chất**: Giải quyết bài toán phân chia trách nhiệm, đóng gói các thuật toán, quản lý trạng thái và cơ chế giao tiếp giữa các đối tượng trong thời gian chạy (*Runtime*).
-   - **Ý nghĩa**: Loại bỏ các cấu trúc điều kiện `if-else` / `switch-case` phức tạp, cho phép thay đổi thuật toán và hành vi của đối tượng một cách linh hoạt.
+   - **Mục đích**: Tập trung vào thuật toán và sự phân chia trách nhiệm, giao tiếp giữa các đối tượng.
+   - **Áp dụng trong dự án**:
+     - *Strategy Pattern*: Đóng gói họ thuật toán tính giảm giá (`DiscountStrategy`) và thanh toán (`PaymentStrategy`), cho phép hoán đổi linh hoạt lúc runtime.
+     - *State Pattern*: Cho phép đối tượng `Booking` thay đổi hành vi khi trạng thái nội tại của nó thay đổi (`PendingState`, `ConfirmedState`, `CheckedInState`...), đồng thời đồng bộ trạng thái phòng.
+     - *Observer Pattern*: Định nghĩa sự phụ thuộc một-nhiều giữa `BookingEventPublisher` và các kênh thông báo (`InAppNotificationObserver`, `EmailNotificationObserver`, `AuditLogObserver`).
 
 ---
 
-### 2.2. Phân tích chi tiết cách áp dụng 5 nguyên lý SOLID trong Hệ thống Đặt phòng Khách sạn
+### 2.2. Phân tích chuyên sâu 5 nguyên lý SOLID áp dụng trong mã nguồn dự án
 
 #### 1. Nguyên lý S — Single Responsibility Principle (Nguyên lý Đơn trách nhiệm)
-- **Phát biểu lý thuyết**: *"Một lớp (class) chỉ nên nắm giữ một trách nhiệm duy nhất và chỉ có duy nhất một lý do để thay đổi."*
-- **Vấn đề nếu không áp dụng**: Nếu gom toàn bộ nghiệp vụ vào một lớp `BookingService` duy nhất (vừa kiểm tra lịch trống của phòng, vừa cộng tiền dịch vụ phụ trợ, vừa kiểm tra hạn sử dụng Voucher, vừa xử lý thanh toán, vừa gửi thông báo cho khách), lớp này sẽ dài hàng nghìn dòng code. Khi thay đổi công thức tính giá Buffet sáng hoặc thay đổi cấu trúc thông báo, ta đều phải sửa cùng một lớp `BookingService`, dễ gây lỗi dây chuyền (*Regression Bug*).
-- **Cách áp dụng trong dự án**: Hệ thống phân tách rõ ràng trách nhiệm cho từng lớp chuyên biệt:
-  - `RoomService`: Chỉ chịu trách nhiệm quản lý danh mục phòng, hạng phòng và kiểm tra xung đột lịch đặt phòng (`validateRoomForBooking`).
-  - `BookingCostBuilderService` & các lớp `BookingServiceDecorator`: Chỉ chịu trách nhiệm tính toán chi phí phòng gốc và các dịch vụ đi kèm.
-  - `DiscountContextService` & các lớp `DiscountStrategy`: Chỉ chịu trách nhiệm kiểm tra tính hợp lệ của Voucher (hạn dùng, giá trị đơn tối thiểu, hạng phòng áp dụng) và tính số tiền giảm giá.
-  - `PaymentContextService` & các lớp `PaymentStrategy`: Chỉ chịu trách nhiệm xử lý giao dịch thanh toán và sinh mã tham chiếu giao dịch.
-  - `BookingStateResolver` & các lớp `BookingState`: Chỉ chịu trách nhiệm kiểm soát quy tắc chuyển đổi trạng thái của đơn đặt phòng.
-  - `InAppNotificationObserver`, `EmailNotificationObserver`, `AuditLogObserver`: Mỗi lớp chỉ chịu trách nhiệm cho đúng một kênh thông báo/ghi nhật ký.
+- **Nội dung**: Một lớp chỉ nên giữ một trách nhiệm duy nhất và chỉ có một lý do duy nhất để thay đổi.
+- **Hiện thực trong dự án**:
+  - `RoomService`: Chuyên trách quản lý danh mục phòng, hạng phòng, chuẩn hóa đường dẫn hình ảnh (`normalizeImageUrl`) và kiểm tra xung đột lịch đặt phòng.
+  - `BookingCostBuilderService`: Chuyên trách lắp ghép chuỗi `BookingServiceDecorator` để tính giá phòng và dịch vụ phụ trợ.
+  - `DiscountContextService`: Chuyên trách kiểm tra tính hợp lệ của Voucher (hạn dùng, giá trị tối thiểu, hạng phòng áp dụng) và gọi chiến lược giảm giá.
+  - `PaymentContextService`: Chuyên trách điều phối giao dịch thanh toán.
+  - `BookingStateResolver`: Chuyên trách kiểm soát chuyển đổi trạng thái đơn đặt phòng.
+  - `EmailNotificationObserver`: Chuyên trách định dạng và gửi Email hóa đơn xác nhận qua SMTP (`JavaMailSender`).
 
 #### 2. Nguyên lý O — Open/Closed Principle (Nguyên lý Đóng/Mở)
-- **Phát biểu lý thuyết**: *"Các thực thể phần mềm (lớp, module, hàm) nên MỞ cho việc mở rộng (Open for extension), nhưng ĐÓNG cho việc sửa đổi (Closed for modification)."*
-- **Cách áp dụng trong dự án**:
-  - **Trong tính năng Giảm giá & Thanh toán (Strategy Pattern)**: `DiscountContextService` và `PaymentContextService` sử dụng cơ chế *Dependency Injection* của Spring để tự động thu thập danh sách `List<DiscountStrategy>` và `List<PaymentStrategy>` vào một `Map` ngay khi khởi động:
+- **Nội dung**: Các module phần mềm nên **mở cho việc mở rộng** (*Open for extension*) nhưng **đóng cho việc sửa đổi** (*Closed for modification*).
+- **Hiện thực trong dự án**:
+  - Trong `DiscountContextService`, toàn bộ các bean thực thi `DiscountStrategy` được Spring tự động gom vào `Map<DiscountType, DiscountStrategy>` qua Constructor Injection:
     ```java
     public DiscountContextService(List<DiscountStrategy> strategies, VoucherRepository voucherRepository) {
         this.strategyMap = strategies.stream()
@@ -198,61 +231,59 @@ flowchart LR
         this.voucherRepository = voucherRepository;
     }
     ```
-    Khi khách sạn muốn bổ sung thêm một loại khuyến mãi mới (ví dụ: `MemberTierDiscountStrategy`) hoặc cổng thanh toán mới (`PayPalPaymentStrategy`), lập trình viên chỉ cần **tạo thêm 1 class mới** thực thi interface tương ứng mà **không cần sửa đổi bất kỳ dòng code nào** trong `DiscountContextService`, `PaymentContextService` hay `BookingFacade`.
-  - **Trong tính năng Thông báo (Observer Pattern)**: Khi muốn thêm kênh gửi tin nhắn Zalo/Telegram cho khách hàng, chỉ cần tạo lớp `ZaloNotificationObserver implements BookingObserver` gắn `@Component`, `BookingEventPublisher` sẽ tự động phát sự kiện tới kênh mới mà không cần sửa code của lớp phát sự kiện.
+  - Khi cần thêm chiến lược giảm giá mới (ví dụ: *VIPMemberDiscountStrategy*) hoặc kênh thông báo mới (ví dụ: *SmsNotificationObserver*), ta chỉ cần tạo class mới thực thi interface tương ứng mà **không cần sửa bất kỳ dòng code nào** trong các lớp hiện có.
 
 #### 3. Nguyên lý L — Liskov Substitution Principle (Nguyên lý Thay thế Liskov)
-- **Phát biểu lý thuyết**: *"Các đối tượng của lớp con (Subtype) có thể thay thế cho các đối tượng của lớp cha/interface (Supertype) mà không làm thay đổi tính đúng đắn của chương trình."*
-- **Cách áp dụng trong dự án**:
-  - **Trong Decorator Pattern (`BookingCostComponent`)**: Cả đối tượng gốc `BaseRoomBookingCost` và tất cả các lớp bọc dịch vụ (`BreakfastDecorator`, `AirportPickupDecorator`, `ExtraBedDecorator`, `SpaDecorator`) đều thực thi giao diện `BookingCostComponent`. Đối tượng bên ngoài (`BookingCostBuilderService`) chỉ làm việc với kiểu trừu tượng `BookingCostComponent` và có thể bọc lồng nhau theo bất kỳ thứ tự nào mà hàm `calculateCost()` và `getDescription()` vẫn luôn trả về kết quả chính xác, không bao giờ xảy ra hiện tượng ép kiểu (`instanceof`) hay ném ngoại lệ bất ngờ.
-  - **Trong Strategy Pattern**: Mọi lớp thực thi `DiscountStrategy` đều đảm bảo hậu điều kiện (post-condition): số tiền giảm trả về luôn nằm trong đoạn `[0, subTotal]` (nhờ `.min(subTotal)`), đảm bảo tổng tiền thanh toán cuối cùng không bao giờ bị âm dù thay thế bất kỳ chiến lược giảm giá nào.
+- **Nội dung**: Các đối tượng của lớp dẫn xuất (*Subtype*) có thể thay thế hoàn toàn cho lớp cơ sở/giao diện (*Supertype*) mà không làm sai lệch hành vi đúng đắn của chương trình.
+- **Hiện thực trong dự án**:
+  - Mọi lớp bọc dịch vụ (`BreakfastDecorator`, `AirportPickupDecorator`, `ExtraBedDecorator`, `SpaDecorator`) đều kế thừa `BookingServiceDecorator` và thực thi `BookingCostComponent`. Khi `BookingCostBuilderService` gọi `component.calculateCost()`, bất kể đối tượng bên dưới là `BaseRoomBookingCost` hay đã được bọc qua 4 tầng Decorator, phương thức luôn trả về số tiền hợp lệ ($\ge 0$) mà không cần ép kiểu hay kiểm tra `instanceof`.
 
-#### 4. Nguyên lý I — Interface Segregation Principle (Nguyên lý Phân tách Interface)
-- **Phát biểu lý thuyết**: *"Không nên ép các lớp Client phải phụ thuộc vào các phương thức mà chúng không sử dụng. Nhiều interface nhỏ, chuyên biệt sẽ tốt hơn một interface lớn đa năng."*
-- **Cách áp dụng trong dự án**:
-  - Thay vì tạo một interface `HotelBusinessOperations` chứa hàng chục phương thức hỗn tạp, hệ thống chia thành các interface nhỏ gọn, đơn mục đích:
-    - `RoomTemplate`: Chỉ định nghĩa cấu hình mẫu của một hạng phòng.
-    - `BookingCostComponent`: Chỉ gồm 2 phương thức `calculateCost()` và `getDescription()`.
-    - `DiscountStrategy`: Chỉ gồm `getDiscountType()` và `calculateDiscount(...)`.
-    - `PaymentStrategy`: Chỉ gồm `getPaymentMethod()` và `processPayment(Booking)`.
-    - `BookingState`: Chỉ gồm các hành vi chuyển trạng thái `confirm()`, `checkIn()`, `checkOut()`, `cancel()`.
-    - `BookingObserver`: Chỉ gồm duy nhất phương thức `onBookingEvent(BookingEvent)`.
+#### 4. Nguyên lý I — Interface Segregation Principle (Nguyên lý Phân tách Giao diện)
+- **Nội dung**: Nhiều giao diện nhỏ, chuyên biệt tốt hơn một giao diện lớn cồng kềnh; không ép Client phụ thuộc vào các phương thức mà nó không dùng.
+- **Hiện thực trong dự án**:
+  - Hệ thống tách biệt thành 6 interface nhỏ gọn, mỗi interface chỉ chứa từ 1 đến 5 phương thức đúng mục đích:
+    - `BookingObserver` (1 phương thức `onBookingEvent`),
+    - `BookingCostComponent` (2 phương thức `calculateCost`, `getDescription`),
+    - `DiscountStrategy` (2 phương thức),
+    - `PaymentStrategy` (2 phương thức),
+    - `BookingState` (5 phương thức vòng đời trạng thái),
+    - `RoomTemplate` (7 phương thức cấu hình mẫu hạng phòng).
 
 #### 5. Nguyên lý D — Dependency Inversion Principle (Nguyên lý Đảo ngược Phụ thuộc)
-- **Phát biểu lý thuyết**: *"1. Các module cấp cao không nên phụ thuộc vào các module cấp thấp. Cả hai nên phụ thuộc vào Abstraction (trừu tượng). 2. Abstraction không nên phụ thuộc vào chi tiết; chi tiết nên phụ thuộc vào Abstraction."*
-- **Cách áp dụng trong dự án**:
-  - Module điều phối cấp cao là `BookingFacade` và các `RestController` hoàn toàn không phụ thuộc trực tiếp vào các lớp cài đặt cụ thể cấp thấp (như `CreditCardPaymentStrategy`, `PercentageDiscountStrategy`, `InAppNotificationObserver` hay các câu lệnh SQL cụ thể), mà chỉ phụ thuộc vào các interface trừu tượng và các Spring Data JPA Repository interfaces (`RoomRepository`, `BookingRepository`, `VoucherRepository`).
+- **Nội dung**: Module cấp cao không phụ thuộc vào module cấp thấp; cả hai cùng phụ thuộc vào *Abstraction* (interface).
+- **Hiện thực trong dự án**:
+  - `BookingFacade`, `DiscountContextService`, `PaymentContextService`, `BookingEventPublisher` chỉ tham chiếu tới các interface (`DiscountStrategy`, `PaymentStrategy`, `BookingState`, `BookingObserver`, `BookingRepository`), tuyệt đối không khởi tạo cứng (`new`) các lớp dịch vụ cấp thấp.
 
 ---
 
-### 2.3. Thiết kế Kiến trúc Tổng thể Phần mềm (MVC Tách rời) & Mô hình CSDL (ERD 10 Bảng)
+### 2.3. Kiến trúc tổng thể hệ thống MVC tách rời (Decoupled Client–Server)
 
-#### A. Sơ đồ Kiến trúc Tổng thể MVC
 ```mermaid
 flowchart TB
     subgraph View_Tier["Tầng Giao diện (VIEW) - Next.js 14 App Router + TypeScript + Tailwind CSS"]
-        UserPortal["Phân hệ Khách hàng (User Portal)\nTrang chủ & Lọc phòng | Chi tiết & Đặt phòng | Lịch sử & Thông báo"]
-        AdminPortal["Phân hệ Quản trị (Admin Sidebar Portal)\nDashboard | Booking | Phòng | Hạng phòng | Voucher | Người dùng"]
+        UserPortal["Phân hệ Khách hàng (User Portal)\n• Tìm & Lọc phòng (VnDateInput dd/MM/yyyy)\n• Chi tiết phòng & Cổng thanh toán VietQR / Thẻ\n• Lịch sử đặt phòng & Thông báo In-App"]
+        AdminPortal["Phân hệ Quản trị (Admin Sidebar Portal)\n• Dashboard thống kê\n• Quản lý Booking & Thanh toán\n• Quản lý Phòng & Hạng phòng (Upload ảnh & Giải mã link ibb.co)\n• Quản lý Voucher & Người dùng"]
     end
 
-    subgraph Controller_Tier["Tầng Điều khiển (CONTROLLER) - Spring Boot REST API"]
-        Security["Spring Security + JwtAuthenticationFilter"]
+    subgraph Controller_Tier["Tầng Điều khiển (CONTROLLER) - Spring Boot 3.2.5 REST API"]
+        Security["Spring Security + JwtAuthenticationFilter (RBAC)"]
         RestCtrls["AuthController | RoomController | BookingController | AdminController"]
     end
 
-    subgraph Model_Tier["Tầng Nghiệp vụ & Mẫu thiết kế (MODEL - Business & Persistence)"]
+    subgraph Model_Tier["Tầng Nghiệp vụ & Mẫu thiết kế (MODEL - Business Logic & Design Patterns)"]
         Facade["BookingFacade (Facade Pattern)"]
         CoreServices["RoomService | DashboardService | UserService | AuthService"]
-        PatternEngine["Hệ thống 7 Design Patterns\n• Creational: Builder, Factory Method\n• Structural: Decorator, Facade\n• Behavioral: Strategy, State, Observer"]
-        Repositories["Spring Data JPA Repositories\n(User, Room, RoomCategory, Voucher, Booking, Payment, Notification)"]
+        PatternEngine["Hệ thống 07 Design Patterns\n• Creational: Builder, Factory Method\n• Structural: Decorator, Facade\n• Behavioral: Strategy, State, Observer (SMTP Mail + In-App)"]
+        Repositories["Spring Data JPA Repositories"]
     end
 
-    subgraph DB_Tier["Hệ Quản trị Cơ sở dữ liệu"]
+    subgraph External_DB["Hạ tầng Cơ sở dữ liệu & Dịch vụ Ngoài"]
         MySQL[("MySQL 8.0\n(hotel_booking_db - 10 bảng)")]
+        SMTP["Gmail SMTP Server\n(JavaMailSender - HTML Invoice)"]
     end
 
-    UserPortal -->|"HTTP REST / JSON"| Security
-    AdminPortal -->|"HTTP REST / JSON"| Security
+    UserPortal -->|"REST API (JSON + Bearer JWT)"| Security
+    AdminPortal -->|"REST API (JSON + Bearer JWT)"| Security
     Security --> RestCtrls
     RestCtrls --> Facade
     RestCtrls --> CoreServices
@@ -262,9 +293,13 @@ flowchart TB
     CoreServices --> Repositories
     Facade --> Repositories
     Repositories -->|"Hibernate / JPA"| MySQL
+    PatternEngine -->|"Gửi hóa đơn Email"| SMTP
 ```
 
-#### B. Sơ đồ Thực thể Kết hợp (ERD - 10 Bảng trong MySQL)
+---
+
+### 2.4. Thiết kế Cơ sở dữ liệu quan hệ (ERD 10 bảng chuẩn 3NF trên MySQL 8.0)
+
 ```mermaid
 erDiagram
     USERS ||--o{ BOOKINGS : "places"
@@ -297,7 +332,7 @@ erDiagram
         varchar default_bed_type
         text default_description
         text default_amenities
-        varchar default_image_url
+        longtext default_image_url "Hỗ trợ URL & Base64 LONGTEXT"
     }
 
     ROOMS {
@@ -317,7 +352,7 @@ erDiagram
     ROOM_IMAGES {
         bigint id PK
         bigint room_id FK
-        varchar image_url
+        longtext image_url "Hỗ trợ URL & Base64 LONGTEXT"
         boolean is_primary
     }
 
@@ -388,25 +423,25 @@ erDiagram
 
 ---
 
-## CHƯƠNG III: PHÂN TÍCH VÀ THIẾT KẾ CHI TIẾT 07 DESIGN PATTERNS THUỘC 3 NHÓM
+## CHƯƠNG III: PHÂN TÍCH VÀ THIẾT KẾ CHI TIẾT CÁC MẪU THIẾT KẾ ÁP DỤNG
 
-### 3.1. Bảng ánh xạ 7 Design Patterns vào các Tính năng Nghiệp vụ
+### 3.1. Bảng ánh xạ tổng hợp 07 Design Patterns vào các tính năng nghiệp vụ
 
 | Nhóm Pattern | Tên Mẫu thiết kế | Các lớp (Classes) cài đặt trong Source Code | Tính năng Nghiệp vụ áp dụng trong Hệ thống |
 | :--- | :--- | :--- | :--- |
-| **1. Creational**<br>*(Khởi tạo)* | **1. Builder Pattern** | `RoomSearchCriteria`<br>`RoomSearchCriteria.Builder`<br>`BookingOrder`<br>`BookingOrder.Builder` | • **Tìm kiếm & Lọc phòng đa tiêu chí** (User & Admin): Tìm theo tên, địa điểm, hạng phòng, số khách, khoảng giá (`minPrice` - `maxPrice`), ngày nhận/trả.<br>• **Đặt phòng trực tuyến**: Khởi tạo đối tượng đơn đặt phòng từng bước và kiểm tra ràng buộc ngày ở, số khách. |
-| **1. Creational**<br>*(Khởi tạo)* | **2. Factory Method Pattern** | `RoomTemplate` *(Interface)*<br>`StandardRoomTemplate`<br>`DeluxeRoomTemplate`<br>`SuiteRoomTemplate`<br>`RoomFactory`<br>`RoomCategory` | • **Quản lý Phòng & Hạng phòng (Admin thêm phòng mới)**: Khi Admin chọn Hạng phòng (`STANDARD`, `DELUXE`, `SUITE` hoặc hạng phòng mới tạo), `RoomFactory` tự động khởi tạo phòng với giá sàn, sức chứa, loại giường, tiện nghi và hình ảnh chuẩn của hạng phòng đó. |
-| **2. Structural**<br>*(Cấu trúc)* | **3. Decorator Pattern** | `BookingCostComponent`<br>`BaseRoomBookingCost`<br>`BookingServiceDecorator`<br>`BreakfastDecorator`<br>`AirportPickupDecorator`<br>`ExtraBedDecorator`<br>`SpaDecorator`<br>`BookingCostBuilderService` | • **Chọn dịch vụ đi kèm & Báo giá trực tiếp khi đặt phòng (User)**: Cho phép khách hàng tích chọn linh hoạt các dịch vụ phụ trợ (*Buffet sáng, Xe đưa đón sân bay, Giường phụ, Spa*), tự động bọc và cộng dồn chi phí cũng như xuất mô tả chi tiết hóa đơn. |
-| **2. Structural**<br>*(Cấu trúc)* | **4. Facade Pattern** | `BookingFacade` | • **Đặt phòng trọn gói, Xem trước báo giá & Quản lý trạng thái Booking**: Cung cấp một điểm giao tiếp duy nhất cho `BookingController` và `AdminController`, điều phối 6 hệ thống con bên dưới (Kiểm tra phòng $\rightarrow$ Decorator tính giá $\rightarrow$ Strategy giảm giá $\rightarrow$ Strategy thanh toán $\rightarrow$ State chuyển trạng thái $\rightarrow$ Observer thông báo). |
-| **3. Behavioral**<br>*(Hành vi)* | **5. Strategy Pattern** | • *Giảm giá*: `DiscountStrategy`, `PercentageDiscountStrategy`, `FixedAmountDiscountStrategy`, `SeasonalDiscountStrategy`, `DiscountContextService`<br>• *Thanh toán*: `PaymentStrategy`, `CreditCardPaymentStrategy`, `EWalletPaymentStrategy`, `PayAtHotelPaymentStrategy`, `PaymentContextService` | • **Quản lý & Áp dụng Voucher theo Hạng phòng**: Kiểm tra điều kiện Hạng phòng (`ALL` hoặc hạng phòng cụ thể) và áp dụng chiến lược tính giảm giá theo %, tiền cố định hoặc mùa lễ.<br>• **Thanh toán đơn đặt phòng**: Xử lý thanh toán linh hoạt qua Thẻ tín dụng, Ví điện tử VNPay/MoMo hoặc Thanh toán tại khách sạn. |
-| **3. Behavioral**<br>*(Hành vi)* | **6. State Pattern** | `BookingState` *(Interface)*<br>`PendingState`<br>`ConfirmedState`<br>`CheckedInState`<br>`CheckedOutState`<br>`CancelledState`<br>`BookingStateResolver` | • **Quản lý vòng đời trạng thái đơn đặt phòng (Admin & User)**: Kiểm soát chặt chẽ các hành động `CONFIRM` (Duyệt đơn), `CHECK_IN` (Nhận phòng), `CHECK_OUT` (Trả phòng), `CANCEL` (Hủy & xóa đơn khỏi danh sách hoạt động). Ngăn chặn mọi thao tác nhảy cóc hoặc hủy đơn khi khách đã Check-in. |
-| **3. Behavioral**<br>*(Hành vi)* | **7. Observer Pattern** | `BookingObserver` *(Interface)*<br>`InAppNotificationObserver`<br>`EmailNotificationObserver`<br>`AuditLogObserver`<br>`BookingEventPublisher`<br>`BookingEvent` | • **Thông báo tự động thời gian thực (User & Admin)**: Khi khách đặt phòng mới, hủy phòng hoặc khi Admin cập nhật trạng thái đơn/thanh toán, hệ thống tự động tạo thông báo trên giao diện khách hàng (*In-App*), gửi Email mô phỏng và ghi nhật ký kiểm toán (*Audit Log*). |
+| **1. Creational**<br>*(Khởi tạo)* | **1. Builder Pattern** | `RoomSearchCriteria`<br>`RoomSearchCriteria.Builder`<br>`BookingOrder`<br>`BookingOrder.Builder` | • **Tìm kiếm & Lọc phòng đa tiêu chí**: Đóng gói 9 tiêu chí tìm kiếm tùy chọn.<br>• **Đặt phòng trực tuyến**: Khởi tạo đối tượng đơn đặt phòng bất biến (*Immutable*) từng bước và tự động kiểm tra ràng buộc ngày ở (`checkOut > checkIn`), số khách tại `.build()`. |
+| **1. Creational**<br>*(Khởi tạo)* | **2. Factory Method Pattern** | `RoomTemplate` *(Interface)*<br>`StandardRoomTemplate`<br>`DeluxeRoomTemplate`<br>`SuiteRoomTemplate`<br>`DefaultRoomTemplate`<br>`RoomFactory`<br>`RoomCategory` | • **Quản lý Phòng & Hạng phòng (Admin thêm phòng mới)**: Khi Admin chọn Hạng phòng (`STANDARD`, `DELUXE`, `SUITE` hoặc hạng phòng động mới tạo), `RoomFactory` tự động tra cứu cấu hình chuẩn và sản xuất thực thể `Room` hoàn chỉnh kèm tiện nghi & hình ảnh. |
+| **2. Structural**<br>*(Cấu trúc)* | **3. Decorator Pattern** | `BookingCostComponent`<br>`BaseRoomBookingCost`<br>`BookingServiceDecorator`<br>`BreakfastDecorator`<br>`AirportPickupDecorator`<br>`ExtraBedDecorator`<br>`SpaDecorator`<br>`BookingCostBuilderService` | • **Chọn dịch vụ đi kèm & Báo giá trực tiếp khi đặt phòng**: Cho phép khách hàng tích chọn linh hoạt các dịch vụ phụ trợ (*Buffet sáng, Xe đưa đón sân bay, Giường phụ, Spa*), tự động bọc lồng nhau để cộng dồn chi phí và sinh chuỗi mô tả chi tiết hóa đơn. |
+| **2. Structural**<br>*(Cấu trúc)* | **4. Facade Pattern** | `BookingFacade` | • **Điều phối trọn gói Đặt phòng, Báo giá & Chuyển trạng thái**: Cung cấp một mặt tiền giao tiếp duy nhất cho `BookingController` và `AdminController`, điều phối 6 hệ thống con bên dưới và tự động giải phóng phòng khi khách trả phòng/hủy đơn. |
+| **3. Behavioral**<br>*(Hành vi)* | **5. Strategy Pattern** | • *Giảm giá*: `DiscountStrategy`, `PercentageDiscountStrategy`, `FixedAmountDiscountStrategy`, `SeasonalDiscountStrategy`, `DiscountContextService`<br>• *Thanh toán*: `PaymentStrategy`, `CreditCardPaymentStrategy`, `EWalletPaymentStrategy`, `PayAtHotelPaymentStrategy`, `PaymentContextService` | • **Áp dụng Voucher theo Hạng phòng**: Kiểm tra điều kiện Hạng phòng (`ALL` hoặc hạng phòng cụ thể) và tính giảm giá theo %, tiền cố định hoặc mùa lễ (+5% nếu ở $\ge 3$ đêm).<br>• **Thanh toán đa phương thức**: Xử lý thanh toán qua Thẻ tín dụng, Ví điện tử hoặc Thanh toán tại khách sạn. |
+| **3. Behavioral**<br>*(Hành vi)* | **6. State Pattern** | `BookingState` *(Interface)*<br>`PendingState`<br>`ConfirmedState`<br>`CheckedInState`<br>`CheckedOutState`<br>`CancelledState`<br>`BookingStateResolver` | • **Quản lý vòng đời trạng thái đơn & Đồng bộ trạng thái phòng**: Kiểm soát chặt chẽ các hành động `CONFIRM`, `CHECK_IN`, `CHECK_OUT`, `CANCEL`. Tự động chuyển phòng sang `OCCUPIED` khi xác nhận/nhận phòng và giải phóng về `AVAILABLE` khi trả phòng/hủy đơn. |
+| **3. Behavioral**<br>*(Hành vi)* | **7. Observer Pattern** | `BookingObserver` *(Interface)*<br>`InAppNotificationObserver`<br>`EmailNotificationObserver`<br>`AuditLogObserver`<br>`BookingEventPublisher`<br>`BookingEvent` | • **Thông báo tự động đa kênh & Gửi Email Hóa đơn thực tế**: Khi phát sinh sự kiện đặt phòng, chuyển trạng thái hoặc hủy đơn, hệ thống tự động lưu thông báo *In-App*, gửi **Email HTML** qua Gmail SMTP (`JavaMailSender`) và ghi *Audit Log*. |
 
 ---
 
-### 3.2. Sơ đồ Luồng xử lý (Workflow) của từng Nhóm Design Patterns
+### 3.2. Sơ đồ Luồng xử lý (Workflow) của từng nhóm Design Patterns
 
-#### A. Sơ đồ Luồng xử lý của Nhóm 1: Creational Patterns (Builder & Factory Method)
+#### A. Luồng xử lý Nhóm Creational (Builder & Factory Method)
 ```mermaid
 flowchart TB
     subgraph Flow_Builder["1. Luồng xử lý Builder Pattern (Tìm kiếm phòng & Đặt phòng)"]
@@ -414,90 +449,42 @@ flowchart TB
         B_Init --> B_Chain["Gán chuỗi thuộc tính tùy chọn (Fluent API)\n.roomId().dates(in, out).guestCount()\n.addonServices().voucherCode().paymentMethod()"]
         B_Chain --> B_Build["Gọi phương thức .build()"]
         B_Build --> B_Val{"Kiểm tra ràng buộc\ntrong validate()"}
-        B_Val -->|"Vi phạm (checkOut <= checkIn\nhoặc guestCount <= 0)"| B_Err["Ném BusinessRuleException\nBáo lỗi rõ ràng cho Client"]
+        B_Val -->|"Vi phạm (checkOut <= checkIn\nhoặc guestCount <= 0)"| B_Err["Ném BusinessRuleException\nBáo lỗi tiếng Việt rõ ràng"]
         B_Val -->|"Hợp lệ"| B_Done["Trả về đối tượng bất biến (Immutable)\nBookingOrder / RoomSearchCriteria"]
     end
 
     subgraph Flow_Factory["2. Luồng xử lý Factory Method Pattern (Admin Thêm phòng mới)"]
-        F_Start["Admin vào Quản lý Phòng\nNhấn '+ Thêm Phòng mới' & chọn Hạng phòng"] --> F_Call["RoomService gọi\nRoomFactory.createRoom(...)"]
+        F_Start["Admin vào Quản lý Phòng\nNhấn '+ Thêm Phòng mới' & chọn Hạng phòng"] --> F_Call["RoomService chuẩn hóa URL ảnh (normalizeImageUrl)\nvà gọi RoomFactory.createRoom(...)"]
         F_Call --> F_Lookup["RoomFactory tra cứu cấu hình từ\nRoomCategory (DB) & RoomTemplate (Map)"]
         F_Lookup --> F_Apply["Tự động áp dụng Giá mặc định, Sức chứa,\nLoại giường, Tiện nghi & Ảnh của Hạng phòng"]
-        F_Apply --> F_Custom["Ghi đè các thông số tùy chỉnh (nếu Admin nhập riêng)\nvà lưu Room vào MySQL"]
+        F_Apply --> F_Custom["Ghi đè các thông số tùy chỉnh (nếu có)\nvà lưu Room vào MySQL"]
     end
 ```
 
-#### B. Sơ đồ Luồng xử lý của Nhóm 2: Structural Patterns (Facade & Decorator)
+#### B. Luồng xử lý Nhóm Structural & Behavioral trong Giao dịch Đặt phòng
 ```mermaid
 flowchart TB
-    Client["Tầng Giao tiếp: BookingController / AdminController"] -->|"Gọi điểm vào duy nhất\nbookingFacade.placeBooking(order)"| Facade["BookingFacade (FACADE PATTERN)"]
+    Client["BookingController / AdminController"] -->|"bookingFacade.placeBooking(order)"| Facade["BookingFacade (FACADE PATTERN)"]
 
     Facade -->|"1. Kiểm tra lịch trống & sức chứa"| Step1["RoomService.validateRoomForBooking()"]
-    Step1 -->|"Phòng hợp lệ & trống"| Step2["BookingCostBuilderService.calculateDecoratedCost()\n(DECORATOR PATTERN)"]
-
-    subgraph Decorator_Pipeline["Chuỗi bọc Decorator tính chi phí động"]
-        Base["Khởi tạo BaseRoomBookingCost\n(Giá phòng/đêm × Số đêm)"] --> Loop{"Duyệt danh sách\naddonServices khách chọn"}
-        Loop -->|"Có BREAKFAST"| W1["new BreakfastDecorator(component, guests, nights)"]
-        Loop -->|"Có AIRPORT_PICKUP"| W2["new AirportPickupDecorator(component)"]
-        Loop -->|"Có EXTRA_BED"| W3["new ExtraBedDecorator(component, nights)"]
-        Loop -->|"Có SPA"| W4["new SpaDecorator(component, guests)"]
-        W1 --> Sum["Gọi đệ quy component.calculateCost()\nvà component.getDescription()"]
-        W2 --> Sum
-        W3 --> Sum
-        W4 --> Sum
-    end
-
-    Step2 --> Base
-    Sum -->|"Trả về DecoratedCostResult\n(baseCost, addonCost, subTotal, description)"| Facade
-    Facade -->|"3. Tính giảm giá Voucher"| Step3["DiscountContextService.evaluateVoucher()"]
-    Facade -->|"4. Thực thi Thanh toán"| Step4["PaymentContextService.executePayment()"]
-    Facade -->|"5. Chuyển trạng thái & Lưu DB"| Step5["BookingStateResolver + BookingRepository.save()"]
-    Facade -->|"6. Phát thông báo"| Step6["BookingEventPublisher.notifyObservers()"]
-```
-
-#### C. Sơ đồ Luồng xử lý của Nhóm 3: Behavioral Patterns (Strategy, State & Observer)
-```mermaid
-flowchart TB
-    subgraph Strategy_Workflow["1. Luồng xử lý Strategy Pattern (Voucher & Thanh toán)"]
-        ST_In["Nhận mã Voucher & Hạng phòng đặt"] --> ST_Scope{"Kiểm tra Hạng phòng áp dụng\n(ALL hoặc khớp RoomType)"}
-        ST_Scope -->|"Không khớp hạng phòng"| ST_Err["Chặn & Báo lỗi:\nVoucher không áp dụng cho hạng phòng này"]
-        ST_Scope -->|"Hợp lệ"| ST_Pick["Chọn DiscountStrategy từ Map theo DiscountType\n(PERCENTAGE | FIXED_AMOUNT | SEASONAL)"]
-        ST_Pick --> ST_Calc["Thực thi strategy.calculateDiscount(subTotal, voucher, nights)"]
-        ST_Calc --> PAY_Pick["Chọn PaymentStrategy theo PaymentMethodType\n(E_WALLET | CREDIT_CARD | PAY_AT_HOTEL)"]
-    end
-
-    subgraph State_Workflow["2. Luồng xử lý State Pattern (Quản lý Vòng đời Trạng thái Đơn)"]
-        STATE_In["Nhận yêu cầu chuyển trạng thái\n(CONFIRM / CHECK_IN / CHECK_OUT / CANCEL)"] --> STATE_Res["BookingStateResolver.resolve(booking.getStatus())\nLấy đối tượng trạng thái hiện tại"]
-        STATE_Res --> STATE_Check{"Kiểm tra quy tắc tại\nlớp State hiện tại"}
-        STATE_Check -->|"Thao tác bị cấm\n(VD: Hủy khi đã CHECKED_IN)"| STATE_Block["Ném BusinessRuleException\nGiữ nguyên tính toàn vẹn dữ liệu"]
-        STATE_Check -->|"Hợp lệ"| STATE_Trans["Cập nhật trạng thái mới cho Booking\n(Nếu là CANCEL -> Xóa đơn khỏi danh sách hoạt động)"]
-    end
-
-    subgraph Observer_Workflow["3. Luồng xử lý Observer Pattern (Thông báo tự động)"]
-        OBS_In["BookingEventPublisher.notifyObservers(BookingEvent)"] --> OBS_1["InAppNotificationObserver\nLưu thông báo vào bảng notifications (MySQL)"]
-        OBS_In --> OBS_2["EmailNotificationObserver\nGhi log gửi Email xác nhận tới khách hàng"]
-        OBS_In --> OBS_3["AuditLogObserver\nGhi nhật ký kiểm toán hệ thống cho Admin"]
-    end
-
-    PAY_Pick --> STATE_In
-    STATE_Trans --> OBS_In
+    Step1 -->|"Hợp lệ"| Step2["BookingCostBuilderService.calculateDecoratedCost()\n(DECORATOR PATTERN: BaseRoom + Breakfast + Pickup + ExtraBed + Spa)"]
+    Step2 -->|"subTotal, description"| Step3["DiscountContextService.evaluateVoucher()\n(STRATEGY PATTERN: Percentage / Fixed / Seasonal)"]
+    Step3 -->|"discountAmount"| Step4["PaymentContextService.executePayment()\n(STRATEGY PATTERN: CreditCard / EWallet / PayAtHotel)"]
+    Step4 -->|"Nếu PAID -> CONFIRM"| Step5["BookingStateResolver.applyAction()\n(STATE PATTERN: Cập nhật BookingStatus & RoomStatus = OCCUPIED)"]
+    Step5 -->|"Lưu MySQL"| Step6["BookingEventPublisher.notifyObservers()\n(OBSERVER PATTERN: In-App DB + Gmail SMTP HTML Invoice + AuditLog)"]
 ```
 
 ---
 
 ### 3.3. Mẫu 1 (Nhóm Creational): Builder Pattern
 
-#### A. Lý do lựa chọn & Bài toán thực tế
-Trong hệ thống đặt phòng khách sạn, hai đối tượng `RoomSearchCriteria` (tiêu chí tìm kiếm/lọc phòng) và `BookingOrder` (yêu cầu đặt phòng) có tới 8–9 thuộc tính, trong đó có nhiều thuộc tính tùy chọn (như `voucherCode`, `addonServices`, `specialRequests`, `minPrice`, `maxPrice`).
-- Nếu sử dụng Constructor nhiều tham số (*Telescoping Constructor*), thứ tự các tham số cùng kiểu (`LocalDate checkIn`, `LocalDate checkOut` hoặc `BigDecimal minPrice`, `BigDecimal maxPrice`) rất dễ bị truyền nhầm.
-- Nếu sử dụng JavaBeans (`new BookingOrder()` rồi gọi `set...`), đối tượng có thể rơi vào trạng thái không nhất quán (ví dụ: quên gán `roomId` hoặc truyền `checkOutDate` trước `checkInDate`) trước khi được đưa vào xử lý.
-- **Giải pháp**: Áp dụng **Builder Pattern** giúp khởi tạo đối tượng từng bước qua chuỗi phương thức trực quan (*Fluent Interface*), đồng thời tập trung toàn bộ logic kiểm tra tính hợp lệ (`validate()`) tại phương thức `.build()`.
+#### A. Bài toán thực tế & Lý do lựa chọn
+Đối tượng `BookingOrder` (đơn đặt phòng đầu vào) và `RoomSearchCriteria` (bộ lọc tìm kiếm phòng) có tới 9 thuộc tính, trong đó nhiều thuộc tính là tùy chọn (`voucherCode`, `addonServices`, `specialRequests`, `minPrice`, `maxPrice`). Việc áp dụng **Builder Pattern** giúp:
+- Tránh hoàn toàn *Telescoping Constructor* (Constructor có 8–9 tham số dễ truyền nhầm thứ tự).
+- Đảm bảo đối tượng sau khi tạo ra là **bất biến (Immutable)** (chỉ có `getter`, không có `setter`).
+- Tập trung toàn bộ kiểm tra ràng buộc (`checkOutDate` phải sau `checkInDate`, `guestCount >= 1`) tại phương thức `validate()` trước khi tạo đối tượng.
 
-#### B. Vai trò các lớp và Quan hệ giữa chúng
-- `BookingOrder` / `RoomSearchCriteria` (**Product**): Đối tượng phức tạp cần khởi tạo, có các thuộc tính là `final` (bất biến - *immutable*), constructor để ở phạm vi `private` để bắt buộc khởi tạo thông qua `Builder`.
-- `BookingOrder.Builder` / `RoomSearchCriteria.Builder` (**Concrete Builder**): Lớp tĩnh bên trong (*Static Inner Class*) giữ các trường tạm thời, cung cấp các phương thức thiết lập trả về chính `Builder` (`this`), phương thức `validate()` kiểm tra quy tắc nghiệp vụ và phương thức `build()` trả về thực thể `Product` hoàn chỉnh.
-- `BookingController` / `RoomController` (**Client / Director**): Điều khiển quá trình gọi các bước của `Builder` từ dữ liệu HTTP Request.
-
-#### C. Sơ đồ Lớp UML (Class Diagram)
+#### B. Sơ đồ Lớp UML (Class Diagram)
 ```mermaid
 classDiagram
     class BookingOrder {
@@ -531,24 +518,10 @@ classDiagram
         +guestCount(Integer) Builder
         +voucherCode(String) Builder
         +addonServices(List~AddonServiceType~) Builder
-        +addService(AddonServiceType) Builder
         +paymentMethod(PaymentMethodType) Builder
         +specialRequests(String) Builder
         -validate() void
         +build() BookingOrder
-    }
-
-    class RoomSearchCriteria {
-        -final String keyword
-        -final String location
-        -final String roomType
-        -final Integer minGuests
-        -final BigDecimal minPrice
-        -final BigDecimal maxPrice
-        -final LocalDate checkInDate
-        -final LocalDate checkOutDate
-        -final RoomStatus status
-        +builder()$ Builder
     }
 
     class BookingController {
@@ -556,54 +529,73 @@ classDiagram
         +previewBookingPrice(PreviewBookingRequest) ResponseEntity
     }
 
-    BookingController ..> BookingOrder_Builder : "khởi tạo & cấu hình"
+    BookingController ..> BookingOrder_Builder : "khởi tạo qua Fluent API"
     BookingOrder_Builder ..> BookingOrder : "tạo ra (creates)"
-    BookingOrder +-- BookingOrder_Builder : "inner class"
+    BookingOrder +-- BookingOrder_Builder : "static inner class"
 ```
 
-#### D. Sơ đồ Tuần tự UML (Sequence Diagram)
-```mermaid
-sequenceDiagram
-    actor User as Khách hàng (User)
-    participant Ctrl as BookingController
-    participant Bld as BookingOrder.Builder
-    participant Prod as BookingOrder
-    participant Facade as BookingFacade
+#### C. Minh họa Code thực tế (`BookingOrder.java`)
+```java
+public final class BookingOrder {
+    private final Long userId;
+    private final Long roomId;
+    private final LocalDate checkInDate;
+    private final LocalDate checkOutDate;
+    private final Integer guestCount;
+    private final String voucherCode;
+    private final List<AddonServiceType> addonServices;
+    private final PaymentMethodType paymentMethod;
+    private final String specialRequests;
 
-    User->>Ctrl: POST /api/bookings (CreateBookingRequest)
-    Ctrl->>Bld: BookingOrder.builder()
-    Ctrl->>Bld: .userId(userId).roomId(roomId)
-    Ctrl->>Bld: .dates(checkInDate, checkOutDate)
-    Ctrl->>Bld: .guestCount(guestCount).addonServices(services)
-    Ctrl->>Bld: .voucherCode(code).paymentMethod(method)
-    Ctrl->>Bld: .build()
-    activate Bld
-    Bld->>Bld: validate() (checkOut > checkIn & guestCount > 0)
-    Bld->>Prod: new BookingOrder(this)
-    Prod-->>Bld: immutableBookingOrder
-    Bld-->>Ctrl: immutableBookingOrder
-    deactivate Bld
-    Ctrl->>Facade: placeBooking(immutableBookingOrder)
-    Facade-->>Ctrl: BookingResponse
-    Ctrl-->>User: HTTP 201 Created (BookingResponse)
+    private BookingOrder(Builder builder) {
+        this.userId = builder.userId;
+        this.roomId = builder.roomId;
+        this.checkInDate = builder.checkInDate;
+        this.checkOutDate = builder.checkOutDate;
+        this.guestCount = builder.guestCount;
+        this.voucherCode = builder.voucherCode;
+        this.addonServices = Collections.unmodifiableList(new ArrayList<>(builder.addonServices));
+        this.paymentMethod = builder.paymentMethod;
+        this.specialRequests = builder.specialRequests;
+    }
+
+    public long getStayNights() {
+        return ChronoUnit.DAYS.between(checkInDate, checkOutDate);
+    }
+
+    public static class Builder {
+        // ... các phương thức Fluent setter trả về this
+        public BookingOrder build() {
+            validate();
+            return new BookingOrder(this);
+        }
+
+        private void validate() {
+            if (roomId == null) {
+                throw new BusinessRuleException("Phải chọn phòng cần đặt (roomId không được để trống).");
+            }
+            if (checkInDate == null || checkOutDate == null) {
+                throw new BusinessRuleException("Ngày nhận phòng và ngày trả phòng không được để trống.");
+            }
+            if (!checkOutDate.isAfter(checkInDate)) {
+                throw new BusinessRuleException("Ngày trả phòng phải sau ngày nhận phòng ít nhất 1 đêm.");
+            }
+            if (guestCount == null || guestCount <= 0) {
+                throw new BusinessRuleException("Số lượng khách lưu trú phải lớn hơn 0.");
+            }
+        }
+    }
+}
 ```
 
 ---
 
 ### 3.4. Mẫu 2 (Nhóm Creational): Factory Method Pattern
 
-#### A. Lý do lựa chọn & Bài toán thực tế
-Khi Quản trị viên thêm phòng mới vào khách sạn (thuộc các hạng `STANDARD`, `DELUXE`, `SUITE` hoặc các hạng phòng mở rộng do Admin định nghĩa trong mục *Quản lý Hạng phòng*), mỗi hạng phòng có bộ thông số tiêu chuẩn riêng (giá sàn mặc định, sức chứa tối đa, loại giường, danh sách tiện nghi đi kèm và hình ảnh đại diện).
-- Nếu đặt câu lệnh `if (type.equals("STANDARD")) { ... } else if (type.equals("DELUXE")) { ... }` trực tiếp trong `RoomService`, mỗi khi thay đổi tiêu chuẩn phòng hoặc thêm hạng phòng mới, ta phải sửa code của `RoomService`.
-- **Giải pháp**: Áp dụng **Factory Method Pattern** thông qua giao diện `RoomTemplate` và lớp `RoomFactory` kết hợp với bảng `RoomCategory` để đóng gói hoàn toàn quy trình sản xuất đối tượng `Room` theo hạng phòng.
+#### A. Bài toán thực tế & Lý do lựa chọn
+Khi Quản trị viên tạo phòng mới theo Hạng phòng (`STANDARD`, `DELUXE`, `SUITE` hoặc hạng phòng mới do Admin tự định nghĩa trong bảng `room_categories`), mỗi hạng phòng có bộ thông số mặc định riêng (giá sàn, sức chứa, loại giường, tiện nghi, hình ảnh). **Factory Method Pattern** (`RoomFactory` + `RoomTemplate`) đóng gói toàn bộ logic khởi tạo này, giúp `RoomService` không chứa bất kỳ câu lệnh `if-else` phân loại hạng phòng nào.
 
-#### B. Vai trò các lớp và Quan hệ giữa chúng
-- `RoomTemplate` (**Product Interface**): Định nghĩa khuôn mẫu cấu hình chuẩn cho một hạng phòng (`getRoomType()`, `getDefaultCapacity()`, `getDefaultBedType()`, `getDefaultBasePrice()`, `getDefaultAmenities()`, `getDefaultImages()`).
-- `StandardRoomTemplate`, `DeluxeRoomTemplate`, `SuiteRoomTemplate` (**Concrete Products / Templates**): Cài đặt thông số chuẩn cho 3 hạng phòng cốt lõi.
-- `RoomCategory` (**Dynamic Category Metadata**): Thực thể lưu trữ cấu hình hạng phòng động do Admin thêm/sửa trên giao diện.
-- `RoomFactory` (**Creator / Factory**): Cung cấp phương thức nhà máy `createRoom(...)` tra cứu cấu hình từ `RoomCategoryRepository` và `Map<String, RoomTemplate>` để khởi tạo thực thể `Room` hoàn chỉnh kèm danh sách `RoomImage` và `Amenity`.
-
-#### C. Sơ đồ Lớp UML (Class Diagram)
+#### B. Sơ đồ Lớp UML (Class Diagram)
 ```mermaid
 classDiagram
     class RoomTemplate {
@@ -617,23 +609,10 @@ classDiagram
         +getDefaultImages() List~String~
     }
 
-    class StandardRoomTemplate {
-        +getRoomType() RoomType
-        +getDefaultCapacity() int
-        +getDefaultBasePrice() BigDecimal
-    }
-
-    class DeluxeRoomTemplate {
-        +getRoomType() RoomType
-        +getDefaultCapacity() int
-        +getDefaultBasePrice() BigDecimal
-    }
-
-    class SuiteRoomTemplate {
-        +getRoomType() RoomType
-        +getDefaultCapacity() int
-        +getDefaultBasePrice() BigDecimal
-    }
+    class StandardRoomTemplate
+    class DeluxeRoomTemplate
+    class SuiteRoomTemplate
+    class DefaultRoomTemplate
 
     class RoomFactory {
         -Map~String, RoomTemplate~ templateMap
@@ -641,68 +620,53 @@ classDiagram
         +createRoom(roomNumber, name, roomTypeCode, location, ...) Room
     }
 
-    class RoomService {
-        -RoomFactory roomFactory
-        -RoomRepository roomRepository
-        +createRoom(CreateOrUpdateRoomRequest) RoomDto
-    }
-
     RoomTemplate <|.. StandardRoomTemplate : "implements"
     RoomTemplate <|.. DeluxeRoomTemplate : "implements"
     RoomTemplate <|.. SuiteRoomTemplate : "implements"
+    RoomTemplate <|.. DefaultRoomTemplate : "implements"
     RoomFactory o--> RoomTemplate : "quản lý qua Map"
-    RoomService --> RoomFactory : "ủy quyền khởi tạo Room"
 ```
 
-#### D. Sơ đồ Tuần tự UML (Sequence Diagram)
-```mermaid
-sequenceDiagram
-    actor Admin as Quản trị viên (Admin)
-    participant Ctrl as AdminController
-    participant Svc as RoomService
-    participant Fac as RoomFactory
-    participant CatRepo as RoomCategoryRepository
-    participant Tpl as SuiteRoomTemplate
-    participant RoomRepo as RoomRepository
+#### C. Minh họa Code thực tế (`RoomFactory.java`)
+```java
+@Component
+public class RoomFactory {
+    private final Map<String, RoomTemplate> templateMap;
+    private final RoomCategoryRepository roomCategoryRepository;
 
-    Admin->>Ctrl: POST /api/admin/rooms (roomNumber="P501", roomType="SUITE")
-    Ctrl->>Svc: createRoom(request)
-    Svc->>Fac: createRoom("P501", name, "SUITE", location, ...)
-    activate Fac
-    Fac->>CatRepo: findByCodeIgnoreCase("SUITE")
-    CatRepo-->>Fac: Optional<RoomCategory>
-    Fac->>Tpl: Lấy cấu hình chuẩn (nếu trường tùy chỉnh để trống)
-    Fac->>Fac: Khởi tạo Room + gán RoomImage + gán Set<Amenity>
-    Fac-->>Svc: configuredRoomEntity
-    deactivate Fac
-    Svc->>RoomRepo: save(configuredRoomEntity)
-    RoomRepo-->>Svc: savedRoom
-    Svc-->>Ctrl: RoomDto
-    Ctrl-->>Admin: HTTP 201 Created (RoomDto)
+    public RoomFactory(List<RoomTemplate> templates, RoomCategoryRepository roomCategoryRepository) {
+        this.templateMap = templates.stream()
+                .collect(Collectors.toMap(t -> t.getRoomType().name().toUpperCase(), Function.identity()));
+        this.roomCategoryRepository = roomCategoryRepository;
+    }
+
+    public Room createRoom(String roomNumber, String name, String roomTypeCode, String location,
+                           BigDecimal customPrice, Integer customCapacity, String customBedType,
+                           String customDescription, RoomStatus status, List<String> customImages,
+                           Function<String, Amenity> amenityResolver) {
+        String normalizedCode = roomTypeCode != null ? roomTypeCode.trim().toUpperCase() : "STANDARD";
+        Optional<RoomCategory> categoryOpt = roomCategoryRepository.findByCodeIgnoreCase(normalizedCode);
+        RoomTemplate template = templateMap.getOrDefault(normalizedCode, new DefaultRoomTemplate());
+        // Kết hợp thông số từ RoomCategory / RoomTemplate với thông số tùy chỉnh của Admin
+        // và khởi tạo thực thể Room hoàn chỉnh kèm RoomImage & Amenity
+    }
+}
 ```
 
 ---
 
 ### 3.5. Mẫu 3 (Nhóm Structural): Decorator Pattern
 
-#### A. Lý do lựa chọn & Bài toán thực tế
-Khi khách hàng đặt phòng, ngoài tiền thuê phòng cơ bản (`giá phòng/đêm × số đêm`), khách hàng có thể chọn thêm bất kỳ tổ hợp dịch vụ phụ trợ nào:
-- **Buffet sáng (`BREAKFAST`)**: `150.000 VNĐ × số khách × số đêm`.
-- **Xe riêng đưa đón sân bay (`AIRPORT_PICKUP`)**: `350.000 VNĐ` (phí cố định).
-- **Giường phụ (`EXTRA_BED`)**: `300.000 VNĐ × số đêm`.
-- **Gói thư giãn Spa & Sauna (`SPA`)**: `400.000 VNĐ × số khách`.
+#### A. Bài toán thực tế & Lý do lựa chọn
+Khi đặt phòng, khách hàng có thể chọn thêm bất kỳ tổ hợp dịch vụ phụ trợ nào:
+- `BREAKFAST` (Buffet sáng): $150.000\text{đ} \times \text{số khách} \times \text{số đêm}$.
+- `AIRPORT_PICKUP` (Xe đưa đón sân bay): $350.000\text{đ}$ cố định.
+- `EXTRA_BED` (Giường phụ): $300.000\text{đ} \times \text{số đêm}$.
+- `SPA` (Gói Spa & Sauna): $400.000\text{đ} \times \text{số khách}$.
 
-Nếu dùng kế thừa tĩnh (tạo các lớp `RoomWithBreakfast`, `RoomWithBreakfastAndSpa`, `RoomWithAllServices`...), với 4 dịch vụ sẽ phát sinh $2^4 = 16$ lớp con (bùng nổ tổ hợp lớp - *Class Explosion*).
-- **Giải pháp**: Áp dụng **Decorator Pattern** để bọc (wrap) đối tượng tiền phòng cơ bản bằng các lớp dịch vụ đi kèm một cách linh hoạt lúc runtime.
+**Decorator Pattern** cho phép bọc (`wrap`) đối tượng tiền phòng cơ bản (`BaseRoomBookingCost`) bằng các lớp `BookingServiceDecorator` một cách linh hoạt lúc runtime, tự động cộng dồn chi phí qua `calculateCost()` và nối chuỗi mô tả hóa đơn qua `getDescription()`.
 
-#### B. Vai trò các lớp và Quan hệ giữa chúng
-- `BookingCostComponent` (**Component Interface**): Khai báo giao diện chung gồm `calculateCost()` và `getDescription()`.
-- `BaseRoomBookingCost` (**Concrete Component**): Lớp gốc tính tiền phòng cơ bản (`pricePerNight * nights`).
-- `BookingServiceDecorator` (**Abstract Decorator**): Lớp trừu tượng vừa thực thi `BookingCostComponent` vừa chứa một tham chiếu `protected final BookingCostComponent wrapped` (quan hệ *Aggregation + Inheritance*). Phương thức `calculateCost()` lấy `wrapped.calculateCost().add(getServiceCost())`.
-- `BreakfastDecorator`, `AirportPickupDecorator`, `ExtraBedDecorator`, `SpaDecorator` (**Concrete Decorators**): Các lớp bọc cụ thể định nghĩa chi phí và tên hiển thị của từng dịch vụ.
-- `BookingCostBuilderService` (**Client组装**): Duyệt danh sách dịch vụ khách chọn và bọc liên tiếp các Decorator quanh `BaseRoomBookingCost`.
-
-#### C. Sơ đồ Lớp UML (Class Diagram)
+#### B. Sơ đồ Lớp UML (Class Diagram)
 ```mermaid
 classDiagram
     class BookingCostComponent {
@@ -730,33 +694,10 @@ classDiagram
         +getDescription() String
     }
 
-    class BreakfastDecorator {
-        -int guestCount
-        -long nights
-        +getServiceType() AddonServiceType
-        +getServiceName() String
-        +getServiceCost() BigDecimal
-    }
-
-    class AirportPickupDecorator {
-        +getServiceType() AddonServiceType
-        +getServiceName() String
-        +getServiceCost() BigDecimal
-    }
-
-    class ExtraBedDecorator {
-        -long nights
-        +getServiceType() AddonServiceType
-        +getServiceName() String
-        +getServiceCost() BigDecimal
-    }
-
-    class SpaDecorator {
-        -int guestCount
-        +getServiceType() AddonServiceType
-        +getServiceName() String
-        +getServiceCost() BigDecimal
-    }
+    class BreakfastDecorator
+    class AirportPickupDecorator
+    class ExtraBedDecorator
+    class SpaDecorator
 
     BookingCostComponent <|.. BaseRoomBookingCost : "implements"
     BookingCostComponent <|.. BookingServiceDecorator : "implements"
@@ -767,102 +708,39 @@ classDiagram
     BookingServiceDecorator <|-- SpaDecorator : "extends"
 ```
 
-#### D. Sơ đồ Tuần tự UML (Sequence Diagram)
-```mermaid
-sequenceDiagram
-    participant Svc as BookingCostBuilderService
-    participant Base as BaseRoomBookingCost
-    participant Dec1 as BreakfastDecorator
-    participant Dec2 as AirportPickupDecorator
+#### C. Minh họa Code thực tế (`BookingServiceDecorator.java` & `BookingCostBuilderService.java`)
+```java
+public abstract class BookingServiceDecorator implements BookingCostComponent {
+    protected final BookingCostComponent wrapped;
 
-    Svc->>Base: new BaseRoomBookingCost("Deluxe Ocean", 1,000,000, 2 đêm)
-    Svc->>Dec1: new BreakfastDecorator(Base, 2 khách, 2 đêm)
-    Svc->>Dec2: new AirportPickupDecorator(Dec1)
-    Svc->>Dec2: calculateCost()
-    activate Dec2
-    Dec2->>Dec1: wrapped.calculateCost()
-    activate Dec1
-    Dec1->>Base: wrapped.calculateCost()
-    Base-->>Dec1: 2,000,000 VNĐ
-    Dec1->>Dec1: + getServiceCost() (600,000 VNĐ)
-    Dec1-->>Dec2: 2,600,000 VNĐ
-    deactivate Dec1
-    Dec2->>Dec2: + getServiceCost() (350,000 VNĐ)
-    Dec2-->>Svc: 2,950,000 VNĐ
-    deactivate Dec2
-    Svc->>Dec2: getDescription()
-    Dec2-->>Svc: "Tiền phòng Deluxe Ocean (2 đêm) + Buffet sáng + Xe đưa đón sân bay"
+    protected BookingServiceDecorator(BookingCostComponent wrapped) {
+        this.wrapped = wrapped;
+    }
+
+    public abstract AddonServiceType getServiceType();
+    public abstract String getServiceName();
+    public abstract BigDecimal getServiceCost();
+
+    @Override
+    public BigDecimal calculateCost() {
+        return wrapped.calculateCost().add(getServiceCost());
+    }
+
+    @Override
+    public String getDescription() {
+        return wrapped.getDescription() + " + " + getServiceName() + " (" + getServiceCost() + " VNĐ)";
+    }
+}
 ```
 
 ---
 
 ### 3.6. Mẫu 4 (Nhóm Structural): Facade Pattern
 
-#### A. Lý do lựa chọn & Bài toán thực tế
-Để hoàn tất một giao dịch đặt phòng trực tuyến, hệ thống phải thực hiện tuần tự 6 bước trên nhiều dịch vụ khác nhau:
-1. Kiểm tra trạng thái phòng, sức chứa và kiểm tra xung đột lịch đặt phòng (`RoomService`).
-2. Tính tiền phòng gốc và bọc các dịch vụ đi kèm (`BookingCostBuilderService`).
-3. Kiểm tra điều kiện mã giảm giá theo Hạng phòng và tính số tiền giảm (`DiscountContextService`).
-4. Khởi tạo thực thể `Booking` kèm danh sách `BookingServiceItem`.
-5. Thực thi chiến lược thanh toán (`PaymentContextService`) và tự động chuyển trạng thái qua `BookingStateResolver` nếu thanh toán trực tuyến hoàn tất.
-6. Lưu vào CSDL (`BookingRepository`) và phát sự kiện thông báo tới các kênh (`BookingEventPublisher`).
+#### A. Bài toán thực tế & Lý do lựa chọn
+Quy trình đặt phòng và quản lý trạng thái đơn liên quan đến 6 hệ thống con (`RoomService`, `BookingCostBuilderService`, `DiscountContextService`, `PaymentContextService`, `BookingStateResolver`, `BookingEventPublisher`). Lớp `BookingFacade` đóng vai trò mặt tiền duy nhất, che giấu toàn bộ sự phức tạp nội tại khỏi `BookingController` và `AdminController`.
 
-Nếu để `BookingController` trực tiếp phụ thuộc và gọi cả 6 dịch vụ này, tầng Controller sẽ bị phình to, vi phạm nguyên lý **SRP** và gây khó khăn khi cần tái sử dụng quy trình đặt phòng hoặc chuyển trạng thái từ `AdminController`.
-- **Giải pháp**: Áp dụng **Facade Pattern** bằng việc xây dựng lớp `BookingFacade` làm mặt tiền giao tiếp thống nhất.
-
-#### B. Vai trò các lớp và Quan hệ giữa chúng
-- `BookingFacade` (**Facade**): Nắm giữ tham chiếu tới các Subsystem (`RoomService`, `BookingCostBuilderService`, `DiscountContextService`, `PaymentContextService`, `BookingStateResolver`, `BookingRepository`, `BookingEventPublisher`) và cung cấp các phương thức bậc cao đơn giản: `previewBookingPrice()`, `placeBooking()`, `transitionBookingState()`, `updatePaymentStatus()`.
-- `BookingController` & `AdminController` (**Clients**): Chỉ cần gọi duy nhất `BookingFacade` mà không cần biết chi tiết bên trong các hệ thống con.
-
-#### C. Sơ đồ Lớp UML (Class Diagram)
-```mermaid
-classDiagram
-    class BookingController {
-        -BookingFacade bookingFacade
-        +previewBookingPrice(PreviewBookingRequest)
-        +createBooking(UserDetails, CreateBookingRequest)
-        +cancelMyBooking(Long, UserDetails)
-    }
-
-    class AdminController {
-        -BookingFacade bookingFacade
-        +getAllBookings()
-        +updateBookingState(Long, UpdateBookingStateRequest, UserDetails)
-        +updatePaymentStatus(Long, UpdatePaymentStatusRequest)
-    }
-
-    class BookingFacade {
-        -RoomService roomService
-        -BookingCostBuilderService costBuilderService
-        -DiscountContextService discountContextService
-        -PaymentContextService paymentContextService
-        -BookingStateResolver stateResolver
-        -BookingRepository bookingRepository
-        -BookingEventPublisher eventPublisher
-        +previewBookingPrice(BookingOrder) PriceBreakdownResponse
-        +placeBooking(BookingOrder) BookingResponse
-        +transitionBookingState(Long, BookingAction, User) BookingResponse
-        +updatePaymentStatus(Long, PaymentStatus) BookingResponse
-    }
-
-    class RoomService
-    class BookingCostBuilderService
-    class DiscountContextService
-    class PaymentContextService
-    class BookingStateResolver
-    class BookingEventPublisher
-
-    BookingController --> BookingFacade : "uses"
-    AdminController --> BookingFacade : "uses"
-    BookingFacade --> RoomService : "1. kiểm tra phòng"
-    BookingFacade --> BookingCostBuilderService : "2. tính phí Decorator"
-    BookingFacade --> DiscountContextService : "3. tính giảm giá Strategy"
-    BookingFacade --> PaymentContextService : "4. xử lý thanh toán Strategy"
-    BookingFacade --> BookingStateResolver : "5. chuyển trạng thái State"
-    BookingFacade --> BookingEventPublisher : "6. phát thông báo Observer"
-```
-
-#### D. Sơ đồ Tuần tự UML (Sequence Diagram)
+#### B. Sơ đồ Tuần tự UML (Sequence Diagram)
 ```mermaid
 sequenceDiagram
     actor User as Khách hàng (User)
@@ -873,26 +751,23 @@ sequenceDiagram
     participant DiscSvc as DiscountContextService
     participant PaySvc as PaymentContextService
     participant StateRes as BookingStateResolver
-    participant Repo as BookingRepository
     participant Pub as BookingEventPublisher
 
     User->>Ctrl: POST /api/bookings
     Ctrl->>Facade: placeBooking(bookingOrder)
     activate Facade
     Facade->>RoomSvc: validateRoomForBooking(roomId, checkIn, checkOut, guests)
-    RoomSvc-->>Facade: Room (AVAILABLE & không trùng lịch)
+    RoomSvc-->>Facade: Room hợp lệ
     Facade->>CostSvc: calculateDecoratedCost(room, bookingOrder)
-    CostSvc-->>Facade: DecoratedCostResult (subTotal, items, description)
+    CostSvc-->>Facade: DecoratedCostResult (subTotal, description)
     Facade->>DiscSvc: evaluateVoucher(voucherCode, subTotal, nights, room.getRoomType())
-    DiscSvc-->>Facade: DiscountEvaluation (voucher, discountAmount)
+    DiscSvc-->>Facade: DiscountEvaluation (discountAmount)
     Facade->>PaySvc: executePayment(booking, paymentMethod)
     PaySvc-->>Facade: Payment (PAID / PENDING)
-    alt Nếu PaymentStatus == PAID (Thanh toán Online)
+    alt Nếu PaymentStatus == PAID (Thanh toán Online VietQR / Thẻ)
         Facade->>StateRes: applyAction(booking, CONFIRM)
-        StateRes-->>Facade: booking.status = CONFIRMED
+        StateRes-->>Facade: booking.status = CONFIRMED & room.status = OCCUPIED
     end
-    Facade->>Repo: save(booking)
-    Repo-->>Facade: savedBooking
     Facade->>Pub: notifyObservers(new BookingEvent("BOOKING_CREATED", savedBooking, msg))
     Facade-->>Ctrl: BookingResponse
     deactivate Facade
@@ -903,353 +778,225 @@ sequenceDiagram
 
 ### 3.7. Mẫu 5 (Nhóm Behavioral): Strategy Pattern
 
-#### A. Lý do lựa chọn & Bài toán thực tế
-Trong hệ thống có hai bài toán có nhiều thuật toán biến thiên:
-1. **Tính tiền giảm giá Voucher (`DiscountStrategy`)**: Hệ thống hỗ trợ giảm theo phần trăm (`PERCENTAGE`), giảm số tiền cố định (`FIXED_AMOUNT`), và giảm theo mùa/kỳ nghỉ dài ngày (`SEASONAL` — tự động cộng thưởng thêm 5% nếu khách lưu trú từ 3 đêm trở lên), kèm điều kiện kiểm tra phạm vi Hạng phòng (`ALL` hoặc danh sách hạng phòng cụ thể).
-2. **Xử lý phương thức thanh toán (`PaymentStrategy`)**: Hỗ trợ Thẻ tín dụng (`CREDIT_CARD` — thanh toán tức thời `PAID`), Ví điện tử (`E_WALLET` — thanh toán tức thời `PAID`) và Thanh toán tại quầy khách sạn (`PAY_AT_HOTEL` — trạng thái chờ thanh toán `PENDING`).
+#### A. Bài toán thực tế & Lý do lựa chọn
+Hệ thống áp dụng **Strategy Pattern** cho 2 bài toán thuật toán biến thiên:
+1. **Chiến lược Giảm giá (`DiscountStrategy`)**:
+   - `PercentageDiscountStrategy`: Giảm theo `%` tổng hóa đơn.
+   - `FixedAmountDiscountStrategy`: Giảm một số tiền cố định (không vượt quá `subTotal`).
+   - `SeasonalDiscountStrategy`: Giảm theo `%` cơ bản, đặc biệt **tự động cộng thưởng thêm 5%** nếu khách lưu trú từ 3 đêm trở lên (`stayNights >= 3`).
+2. **Chiến lược Thanh toán (`PaymentStrategy`)**:
+   - `CreditCardPaymentStrategy`: Xử lý thanh toán thẻ quốc tế (`PAID`, sinh mã `CC-...`).
+   - `EWalletPaymentStrategy`: Xử lý thanh toán ví điện tử VietQR (`PAID`, sinh mã `EW-...`).
+   - `PayAtHotelPaymentStrategy`: Ghi nhận giữ phòng trả tại quầy lễ tân (`PENDING`, sinh mã `HOTEL-...`).
 
-- **Giải pháp**: Áp dụng **Strategy Pattern** để tách từng thuật toán giảm giá và từng phương thức thanh toán ra các lớp chiến lược độc lập, được lựa chọn động lúc runtime qua `Map` $O(1)$.
+#### B. Minh họa Code thực tế (`SeasonalDiscountStrategy.java`)
+```java
+@Component
+public class SeasonalDiscountStrategy implements DiscountStrategy {
+    private static final BigDecimal LONG_STAY_BONUS_PERCENT = new BigDecimal("5");
 
-#### B. Vai trò các lớp và Quan hệ giữa chúng
-- `DiscountStrategy` & `PaymentStrategy` (**Strategy Interfaces**): Định nghĩa hợp đồng chung cho họ thuật toán giảm giá và thanh toán.
-- `PercentageDiscountStrategy`, `FixedAmountDiscountStrategy`, `SeasonalDiscountStrategy` (**Concrete Discount Strategies**): Cài đặt công thức tính giảm giá cụ thể.
-- `CreditCardPaymentStrategy`, `EWalletPaymentStrategy`, `PayAtHotelPaymentStrategy` (**Concrete Payment Strategies**): Cài đặt quy trình tạo giao dịch thanh toán cụ thể.
-- `DiscountContextService` & `PaymentContextService` (**Contexts**): Kiểm tra điều kiện đầu vào (như hạn dùng Voucher, giá trị đơn tối thiểu, hạng phòng áp dụng) và ủy quyền thực thi cho `Strategy` tương ứng.
-
-#### C. Sơ đồ Lớp UML (Class Diagram)
-```mermaid
-classDiagram
-    class DiscountStrategy {
-        <<interface>>
-        +getDiscountType() DiscountType
-        +calculateDiscount(BigDecimal subTotal, Voucher voucher, long stayNights) BigDecimal
+    @Override
+    public DiscountType getDiscountType() {
+        return DiscountType.SEASONAL;
     }
 
-    class PercentageDiscountStrategy {
-        +getDiscountType() DiscountType
-        +calculateDiscount(BigDecimal, Voucher, long) BigDecimal
+    @Override
+    public BigDecimal calculateDiscount(BigDecimal subTotal, Voucher voucher, long stayNights) {
+        BigDecimal effectivePercent = voucher.getDiscountValue();
+        if (stayNights >= 3) {
+            effectivePercent = effectivePercent.add(LONG_STAY_BONUS_PERCENT);
+        }
+        BigDecimal discount = subTotal.multiply(effectivePercent)
+                .divide( new BigDecimal("100"), 0, RoundingMode.HALF_UP );
+        return discount.min(subTotal);
     }
-
-    class FixedAmountDiscountStrategy {
-        +getDiscountType() DiscountType
-        +calculateDiscount(BigDecimal, Voucher, long) BigDecimal
-    }
-
-    class SeasonalDiscountStrategy {
-        +getDiscountType() DiscountType
-        +calculateDiscount(BigDecimal, Voucher, long) BigDecimal
-    }
-
-    class DiscountContextService {
-        -Map~DiscountType, DiscountStrategy~ strategyMap
-        -VoucherRepository voucherRepository
-        +evaluateVoucher(String code, BigDecimal subTotal, long nights, String roomType) DiscountEvaluation
-    }
-
-    class PaymentStrategy {
-        <<interface>>
-        +getPaymentMethod() PaymentMethodType
-        +processPayment(Booking booking) Payment
-    }
-
-    class CreditCardPaymentStrategy {
-        +getPaymentMethod() PaymentMethodType
-        +processPayment(Booking) Payment
-    }
-
-    class EWalletPaymentStrategy {
-        +getPaymentMethod() PaymentMethodType
-        +processPayment(Booking) Payment
-    }
-
-    class PayAtHotelPaymentStrategy {
-        +getPaymentMethod() PaymentMethodType
-        +processPayment(Booking) Payment
-    }
-
-    class PaymentContextService {
-        -Map~PaymentMethodType, PaymentStrategy~ strategyMap
-        +executePayment(Booking booking, PaymentMethodType methodType) Payment
-    }
-
-    DiscountStrategy <|.. PercentageDiscountStrategy : "implements"
-    DiscountStrategy <|.. FixedAmountDiscountStrategy : "implements"
-    DiscountStrategy <|.. SeasonalDiscountStrategy : "implements"
-    DiscountContextService o--> DiscountStrategy : "chọn lúc runtime"
-
-    PaymentStrategy <|.. CreditCardPaymentStrategy : "implements"
-    PaymentStrategy <|.. EWalletPaymentStrategy : "implements"
-    PaymentStrategy <|.. PayAtHotelPaymentStrategy : "implements"
-    PaymentContextService o--> PaymentStrategy : "chọn lúc runtime"
-```
-
-#### D. Sơ đồ Tuần tự UML (Sequence Diagram)
-```mermaid
-sequenceDiagram
-    participant Facade as BookingFacade
-    participant Ctx as DiscountContextService
-    participant Repo as VoucherRepository
-    participant Strat as SeasonalDiscountStrategy
-
-    Facade->>Ctx: evaluateVoucher("SUMMER15", 3,000,000, 3 đêm, "DELUXE")
-    activate Ctx
-    Ctx->>Repo: findByCodeIgnoreCase("SUMMER15")
-    Repo-->>Ctx: Voucher (type=SEASONAL, value=15%, applicable="DELUXE,SUITE")
-    Ctx->>Ctx: Kiểm tra hạn dùng, minOrderValue & khớp hạng phòng "DELUXE"
-    Ctx->>Ctx: strategyMap.get(DiscountType.SEASONAL)
-    Ctx->>Strat: calculateDiscount(3,000,000, voucher, 3 đêm)
-    activate Strat
-    Strat->>Strat: stayNights >= 3 -> cộng thưởng 5% (15% + 5% = 20%)
-    Strat-->>Ctx: 600,000 VNĐ
-    deactivate Strat
-    Ctx-->>Facade: DiscountEvaluation(voucher, 600,000 VNĐ)
-    deactivate Ctx
+}
 ```
 
 ---
 
-### 3.8. Mẫu 6 (Nhóm Behavioral): State Pattern
+### 3.8. Mẫu 6 (Nhóm Behavioral): State Pattern & Đồng bộ Trạng thái Phòng
 
-#### A. Lý do lựa chọn & Bài toán thực tế
-Một đơn đặt phòng có vòng đời đi qua các trạng thái: `PENDING` (Chờ xác nhận) $\rightarrow$ `CONFIRMED` (Đã xác nhận) $\rightarrow$ `CHECKED_IN` (Đang lưu trú) $\rightarrow$ `CHECKED_OUT` (Đã trả phòng) hoặc `CANCELLED` (Đã hủy).
-Mỗi trạng thái có các quy tắc nghiệp vụ nghiêm ngặt:
-- Khi đang `PENDING`: Chỉ được phép `confirm()` hoặc `cancel()`. Không được phép `checkIn()` hay `checkOut()` ngay.
-- Khi đang `CONFIRMED`: Chỉ được phép `checkIn()` (và tự động thu tiền nếu thanh toán tại quầy) hoặc `cancel()`.
-- Khi đang `CHECKED_IN`: Khách đã nhận phòng và đang ở, **chỉ được phép `checkOut()`**, tuyệt đối không được phép `cancel()`.
-- Khi đã `CHECKED_OUT` hoặc `CANCELLED`: Trạng thái kết thúc, từ chối mọi thay đổi tiếp theo.
+#### A. Bài toán thực tế & Lý do lựa chọn
+Đơn đặt phòng đi qua 5 trạng thái (`PENDING`, `CONFIRMED`, `CHECKED_IN`, `CHECKED_OUT`, `CANCELLED`). Mỗi trạng thái được đóng gói thành một lớp thực thi `BookingState` và tự động đồng bộ với trạng thái vật lý của phòng (`RoomStatus`):
+- `PendingState`:
+  - `confirm(booking)`: Chuyển đơn sang `CONFIRMED` và **tự động chuyển phòng sang `OCCUPIED`** (đã giữ phòng).
+  - `cancel(booking)`: Chuyển đơn sang `CANCELLED`. Chặn `checkIn()` và `checkOut()`.
+- `ConfirmedState`:
+  - `checkIn(booking)`: Chuyển đơn sang `CHECKED_IN`, chuyển phòng sang `OCCUPIED`, đồng thời tự động cập nhật `PaymentStatus = PAID` nếu khách chọn trả tại khách sạn.
+  - `cancel(booking)`: Chuyển đơn sang `CANCELLED`.
+- `CheckedInState`:
+  - `checkOut(booking)`: Chuyển đơn sang `CHECKED_OUT` và **tự động giải phóng phòng về `AVAILABLE`**.
+  - `cancel(booking)`: **Ném `BusinessRuleException` chặn tuyệt đối** việc hủy đơn khi khách đã nhận phòng.
 
-Nếu không dùng **State Pattern**, lập trình viên phải viết rất nhiều câu lệnh `if-else` kiểm tra trạng thái hiện tại ở mọi hàm cập nhật.
-- **Giải pháp**: Áp dụng **State Pattern**, biến mỗi trạng thái của đơn đặt phòng thành một lớp độc lập tự chịu trách nhiệm kiểm soát các bước chuyển tiếp hợp lệ của chính nó.
-
-#### B. Vai trò các lớp và Quan hệ giữa chúng
-- `BookingState` (**State Interface**): Khai báo các phương thức hành động gắn với vòng đời đơn đặt phòng (`confirm(Booking)`, `checkIn(Booking)`, `checkOut(Booking)`, `cancel(Booking)`).
-- `PendingState`, `ConfirmedState`, `CheckedInState`, `CheckedOutState`, `CancelledState` (**Concrete States**): Cài đặt hành vi cụ thể cho từng trạng thái; cho phép chuyển trạng thái hợp lệ hoặc ném `BusinessRuleException` với thông báo tiếng Việt rõ ràng nếu hành động bị cấm.
-- `BookingStateResolver` (**State Context / Resolver**): Ánh xạ `BookingStatus` hiện tại của thực thể `Booking` sang đối tượng `BookingState` tương ứng và ủy quyền thực thi hành động.
-
-#### C. Sơ đồ Lớp UML (Class Diagram)
-```mermaid
-classDiagram
-    class BookingState {
-        <<interface>>
-        +getStatus() BookingStatus
-        +confirm(Booking booking) void
-        +checkIn(Booking booking) void
-        +checkOut(Booking booking) void
-        +cancel(Booking booking) void
+#### B. Minh họa Code thực tế (`ConfirmedState.java` & `CheckedInState.java`)
+```java
+@Component
+public class ConfirmedState implements BookingState {
+    @Override
+    public BookingStatus getStatus() {
+        return BookingStatus.CONFIRMED;
     }
 
-    class PendingState {
-        +getStatus() BookingStatus
-        +confirm(Booking) void
-        +checkIn(Booking) void
-        +checkOut(Booking) void
-        +cancel(Booking) void
+    @Override
+    public void checkIn(Booking booking) {
+        booking.setStatus(BookingStatus.CHECKED_IN);
+        if (booking.getRoom() != null && booking.getRoom().getStatus() != RoomStatus.MAINTENANCE) {
+            booking.getRoom().setStatus(RoomStatus.OCCUPIED);
+        }
+        if (booking.getPayment() != null && booking.getPayment().getPaymentStatus() == PaymentStatus.PENDING) {
+            booking.getPayment().setPaymentStatus(PaymentStatus.PAID);
+            booking.getPayment().setPaidAt(LocalDateTime.now());
+        }
     }
-
-    class ConfirmedState {
-        +getStatus() BookingStatus
-        +confirm(Booking) void
-        +checkIn(Booking) void
-        +checkOut(Booking) void
-        +cancel(Booking) void
-    }
-
-    class CheckedInState {
-        +getStatus() BookingStatus
-        +confirm(Booking) void
-        +checkIn(Booking) void
-        +checkOut(Booking) void
-        +cancel(Booking) void
-    }
-
-    class CheckedOutState {
-        +getStatus() BookingStatus
-        +confirm(Booking) void
-        +checkIn(Booking) void
-        +checkOut(Booking) void
-        +cancel(Booking) void
-    }
-
-    class CancelledState {
-        +getStatus() BookingStatus
-        +confirm(Booking) void
-        +checkIn(Booking) void
-        +checkOut(Booking) void
-        +cancel(Booking) void
-    }
-
-    class BookingStateResolver {
-        -Map~BookingStatus, BookingState~ stateMap
-        +resolve(BookingStatus) BookingState
-        +applyAction(Booking booking, BookingAction action) void
-    }
-
-    BookingState <|.. PendingState : "implements"
-    BookingState <|.. ConfirmedState : "implements"
-    BookingState <|.. CheckedInState : "implements"
-    BookingState <|.. CheckedOutState : "implements"
-    BookingState <|.. CancelledState : "implements"
-    BookingStateResolver o--> BookingState : "ủy quyền theo trạng thái hiện tại"
-```
-
-#### D. Sơ đồ Tuần tự UML (Sequence Diagram)
-```mermaid
-sequenceDiagram
-    actor Admin as Quản trị viên (Admin)
-    participant Ctrl as AdminController
-    participant Facade as BookingFacade
-    participant Res as BookingStateResolver
-    participant State as ConfirmedState
-    participant Booking as Booking Entity
-
-    Admin->>Ctrl: PATCH /api/admin/bookings/{id}/state (action = CHECK_IN)
-    Ctrl->>Facade: transitionBookingState(id, CHECK_IN, admin)
-    activate Facade
-    Facade->>Res: applyAction(booking, CHECK_IN)
-    activate Res
-    Res->>Res: resolve(booking.getStatus() == CONFIRMED)
-    Res->>State: checkIn(booking)
-    activate State
-    State->>Booking: setStatus(BookingStatus.CHECKED_IN)
-    State->>Booking: Cập nhật PaymentStatus = PAID (nếu đang PENDING)
-    State-->>Res: Hoàn tất chuyển trạng thái
-    deactivate State
-    Res-->>Facade: Thành công
-    deactivate Res
-    Facade-->>Ctrl: BookingResponse (status = CHECKED_IN)
-    deactivate Facade
-    Ctrl-->>Admin: HTTP 200 OK
+    // ...
+}
 ```
 
 ---
 
-### 3.9. Mẫu 7 (Nhóm Behavioral): Observer Pattern
+### 3.9. Mẫu 7 (Nhóm Behavioral): Observer Pattern (In-App, SMTP Email HTML & Audit Log)
 
-#### A. Lý do lựa chọn & Bài toán thực tế
-Mỗi khi một sự kiện quan trọng xảy ra trên đơn đặt phòng (Đặt phòng mới `BOOKING_CREATED`, Chuyển trạng thái `BOOKING_STATE_CHANGED`, Hủy đơn `BOOKING_CANCELLED`, Cập nhật thanh toán `PAYMENT_STATUS_UPDATED`), hệ thống cần kích hoạt đồng thời nhiều tác vụ phụ trợ:
-1. Tạo thông báo hiển thị trực tiếp trên giao diện của khách hàng (`InAppNotificationObserver` lưu vào bảng `notifications`).
-2. Gửi Email xác nhận cho khách hàng (`EmailNotificationObserver`).
-3. Ghi nhật ký kiểm toán (`AuditLogObserver`) phục vụ theo dõi vận hành.
+#### A. Bài toán thực tế & Lý do lựa chọn
+Khi đơn đặt phòng được tạo mới hoặc chuyển trạng thái, `BookingEventPublisher` phát sự kiện `BookingEvent` tới tất cả các `BookingObserver` đã đăng ký:
+1. `InAppNotificationObserver`: Lưu thông báo vào bảng `notifications` trong MySQL để hiển thị tức thời trên giao diện người dùng.
+2. `EmailNotificationObserver`: Sử dụng `JavaMailSender` (Spring Boot Mail + Gmail SMTP) để gửi **Email Hóa đơn Xác nhận định dạng HTML chuyên nghiệp** tới địa chỉ email thật của khách hàng, đồng thời in bản đối chiếu ra Console.
+3. `AuditLogObserver`: Ghi nhật ký kiểm toán hệ thống phục vụ tra cứu vận hành.
 
-Nếu gọi trực tiếp cả 3 tác vụ này bên trong `BookingFacade`, `BookingFacade` sẽ bị gắn chặt với tầng thông báo.
-- **Giải pháp**: Áp dụng **Observer Pattern** với mối quan hệ *Publish–Subscribe* một-nhiều giữa `BookingEventPublisher` và danh sách `BookingObserver`.
+#### B. Minh họa Code thực tế (`EmailNotificationObserver.java`)
+```java
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class EmailNotificationObserver implements BookingObserver {
+    private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
-#### B. Vai trò các lớp và Quan hệ giữa chúng
-- `BookingEvent` (**Event Payload**): Đóng gói loại sự kiện (`eventType`), đối tượng `Booking` và nội dung thông điệp (`message`).
-- `BookingObserver` (**Observer Interface**): Khai báo phương thức cập nhật `onBookingEvent(BookingEvent event)`.
-- `InAppNotificationObserver`, `EmailNotificationObserver`, `AuditLogObserver` (**Concrete Observers**): Các lớp lắng nghe và xử lý sự kiện theo từng kênh độc lập.
-- `BookingEventPublisher` (**Subject / Publisher**): Quản lý danh sách `List<BookingObserver>` và phát thông báo tới toàn bộ các Observer khi có sự kiện mới.
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
 
-#### C. Sơ đồ Lớp UML (Class Diagram)
-```mermaid
-classDiagram
-    class BookingEvent {
-        -String eventType
-        -Booking booking
-        -String message
-        +getEventType() String
-        +getBooking() Booking
-        +getMessage() String
+    @Override
+    public void onBookingEvent(BookingEvent event) {
+        Booking b = event.getBooking();
+        String toEmail = b.getUser().getEmail();
+        String subject = buildSubject(event.getEventType(), b.getBookingCode());
+        String htmlContent = buildHtmlInvoiceEmail(event, b);
+
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        if (mailSender != null && mailUsername != null && !mailUsername.isBlank()) {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, StandardCharsets.UTF_8.name());
+            helper.setFrom(mailUsername, "Luxury Hotel Booking System");
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+        }
     }
-
-    class BookingObserver {
-        <<interface>>
-        +onBookingEvent(BookingEvent event) void
-    }
-
-    class InAppNotificationObserver {
-        -NotificationRepository notificationRepository
-        +onBookingEvent(BookingEvent event) void
-    }
-
-    class EmailNotificationObserver {
-        +onBookingEvent(BookingEvent event) void
-    }
-
-    class AuditLogObserver {
-        +onBookingEvent(BookingEvent event) void
-    }
-
-    class BookingEventPublisher {
-        -List~BookingObserver~ observers
-        +notifyObservers(BookingEvent event) void
-    }
-
-    BookingObserver <|.. InAppNotificationObserver : "implements"
-    BookingObserver <|.. EmailNotificationObserver : "implements"
-    BookingObserver <|.. AuditLogObserver : "implements"
-    BookingEventPublisher o--> BookingObserver : "notifies 1..*"
-    BookingObserver ..> BookingEvent : "receives"
-```
-
-#### D. Sơ đồ Tuần tự UML (Sequence Diagram)
-```mermaid
-sequenceDiagram
-    participant Facade as BookingFacade
-    participant Pub as BookingEventPublisher
-    participant Obs1 as InAppNotificationObserver
-    participant Repo as NotificationRepository
-    participant Obs2 as EmailNotificationObserver
-    participant Obs3 as AuditLogObserver
-
-    Facade->>Pub: notifyObservers(new BookingEvent("BOOKING_STATE_CHANGED", booking, msg))
-    activate Pub
-    Pub->>Obs1: onBookingEvent(event)
-    activate Obs1
-    Obs1->>Repo: save(Notification cho User)
-    Repo-->>Obs1: savedNotification
-    Obs1-->>Pub: done
-    deactivate Obs1
-    Pub->>Obs2: onBookingEvent(event)
-    Obs2-->>Pub: Gửi Email xác nhận thành công
-    Pub->>Obs3: onBookingEvent(event)
-    Obs3-->>Pub: Ghi Audit Log thành công
-    Pub-->>Facade: Hoàn tất phát sự kiện
-    deactivate Pub
+}
 ```
 
 ---
 
-## CHƯƠNG IV: SO SÁNH ƯU/NHƯỢC ĐIỂM, ĐÁNH GIÁ SOLID & KỊCH BẢN KIỂM THỬ (TEST CASES / DEMO)
+## CHƯƠNG IV: CÀI ĐẶT, THỬ NGHIỆM VÀ ĐÁNH GIÁ KẾT QUẢ
 
-### 4.1. Bảng so sánh Ưu/Nhược điểm khi áp dụng Design Patterns & Đánh giá tuân thủ SOLID
+### 4.1. Cấu trúc thư mục dự án & Hướng dẫn cài đặt, vận hành hệ thống
 
-| Mẫu Thiết Kế | Cách thiết kế thông thường (Không dùng Pattern) | Ưu điểm khi áp dụng Design Pattern trong Dự án | Nhược điểm / Sự đánh đổi (Trade-offs) | Nguyên lý SOLID được đảm bảo |
-| :--- | :--- | :--- | :--- | :--- |
-| **1. Builder Pattern** | Dùng Constructor có 8–10 tham số hoặc tạo đối tượng rỗng rồi gọi `setter` rải rác; dễ truyền nhầm thứ tự tham số và tạo ra đối tượng chưa được kiểm tra ràng buộc. | • Đọc hiểu trực quan nhờ chuỗi phương thức (*Fluent API*).<br>• Đảm bảo tính bất biến (*Immutability*) và gom toàn bộ logic kiểm tra hợp lệ (`validate()`) về một nơi duy nhất tại `.build()`. | • Cần viết thêm lớp `Builder` tĩnh bên trong lớp sản phẩm. | **SRP**: Tách trách nhiệm khởi tạo & kiểm tra hợp lệ dữ liệu đầu vào khỏi đối tượng nghiệp vụ. |
-| **2. Factory Method** | Dùng `switch-case` theo mã hạng phòng ngay trong `RoomService` để gán giá, sức chứa, giường và tiện nghi mặc định. | • Đóng gói hoàn toàn cấu hình mặc định của từng hạng phòng vào các `RoomTemplate` và `RoomCategory`.<br>• Admin có thể thêm hạng phòng mới mà không cần sửa `RoomService`. | • Tăng số lượng lớp `Template` cho các hạng phòng tiêu chuẩn. | **OCP & SRP**: Mở rộng hạng phòng mới dễ dàng mà không sửa đổi logic của `RoomService`. |
-| **3. Decorator Pattern** | Dùng nhiều câu lệnh `if (hasBreakfast) total += ...` hoặc tạo hàng chục lớp con kế thừa cho từng tổ hợp dịch vụ đi kèm. | • Kết hợp động bất kỳ tổ hợp dịch vụ đi kèm nào lúc runtime.<br>• Tự động tổng hợp cả tổng chi phí (`calculateCost()`) lẫn chuỗi mô tả chi tiết hóa đơn (`getDescription()`). | • Tạo ra nhiều đối tượng nhỏ bọc lồng nhau trong bộ nhớ khi tính toán. | **OCP & LSP**: Thêm dịch vụ mới (ví dụ: *LaundryDecorator*) chỉ cần thêm 1 lớp con, không sửa lớp gốc. |
-| **4. Facade Pattern** | `BookingController` và `AdminController` phải inject và gọi trực tiếp 6–7 Services/Repositories khác nhau, gây lặp code và phụ thuộc chặt. | • Cung cấp một điểm giao tiếp duy nhất (`BookingFacade`), che giấu toàn bộ sự phức tạp của 6 hệ thống con.<br>• Giảm thiểu sự phụ thuộc giữa tầng `Controller` và tầng `Model/Service`. | • Lớp `Facade` điều phối nhiều dịch vụ nên cần phân tách rõ để không chứa logic chi tiết của từng hệ thống con. | **DIP & SRP**: Controller chỉ phụ thuộc vào mặt tiền bậc cao, không bị ràng buộc vào các dịch vụ chi tiết. |
-| **5. Strategy Pattern** | Dùng cấu trúc `if-else` / `switch-case` dài để tính các loại Voucher hoặc xử lý từng phương thức thanh toán trong cùng một hàm. | • Mỗi công thức giảm giá (`Percentage`, `Fixed`, `Seasonal`) và phương thức thanh toán được tách thành một lớp độc lập, dễ dàng kiểm thử đơn vị (*Unit Test*). | • Số lượng lớp tăng tương ứng với số lượng chiến lược giảm giá và thanh toán. | **OCP, LSP, ISP & DIP**: Thay thế thuật toán linh hoạt lúc runtime thông qua interface `DiscountStrategy` / `PaymentStrategy`. |
-| **6. State Pattern** | Kiểm tra điều kiện lồng nhau (`if (status == PENDING && action == CHECK_IN)`) ở mọi nơi có cập nhật trạng thái đơn đặt phòng. | • Loại bỏ hoàn toàn các khối `if-else` kiểm tra trạng thái.<br>• Mỗi lớp trạng thái (`PendingState`, `ConfirmedState`, `CheckedInState`...) tự bảo vệ tính toàn vẹn của vòng đời đơn đặt phòng. | • Cần tạo 5 lớp tương ứng với 5 trạng thái của đơn đặt phòng. | **SRP & OCP**: Mỗi trạng thái nằm trong một lớp riêng biệt; dễ dàng chỉnh sửa quy tắc của từng trạng thái. |
-| **7. Observer Pattern** | Gọi cứng `notificationRepo.save()`, `emailService.send()`, `auditLog.write()` ngay bên trong hàm đặt phòng và hàm duyệt đơn. | • Giảm sự phụ thuộc (*Loose Coupling*) giữa luồng đặt phòng chính và các kênh thông báo.<br>• Dễ dàng cắm thêm (plug-in) các kênh thông báo mới mà không chạm vào `BookingFacade`. | • Cần đảm bảo các Observer xử lý nhanh gọn để không làm chậm luồng phản hồi chính. | **OCP & DIP**: `BookingEventPublisher` chỉ phụ thuộc vào interface `BookingObserver`. |
+#### A. Cấu trúc thư mục mã nguồn
+```text
+hotel-booking-system/
+├── backend/                                 # Spring Boot 3.2.5 Backend (Java 17/21)
+│   ├── src/main/java/com/hotel/booking/
+│   │   ├── config/DataSeeder.java           # Tự động nâng cấp LONGTEXT & khởi tạo dữ liệu mẫu
+│   │   ├── controller/                      # AuthController, RoomController, BookingController, AdminController
+│   │   ├── dto/                             # Request / Response DTOs
+│   │   ├── entity/                          # 10 JPA Entities (User, Room, RoomCategory, Booking, Voucher...)
+│   │   ├── patterns/
+│   │   │   ├── creational/builder/          # BookingOrder, RoomSearchCriteria
+│   │   │   ├── creational/factory/          # RoomFactory, RoomTemplate, Standard/Deluxe/Suite/Default
+│   │   │   ├── structural/decorator/        # BookingCostComponent, Breakfast/Airport/ExtraBed/SpaDecorator
+│   │   │   ├── structural/facade/           # BookingFacade
+│   │   │   └── behavioral/
+│   │   │       ├── strategy/                # DiscountStrategy (3 loại) & PaymentStrategy (3 loại)
+│   │   │       ├── state/                   # BookingState (5 trạng thái) & BookingStateResolver
+│   │   │       └── observer/                # BookingObserver (InApp, Email SMTP HTML, AuditLog)
+│   │   ├── repository/                      # Spring Data JPA Repositories
+│   │   ├── security/                        # SecurityConfig, JwtAuthenticationFilter, JwtService
+│   │   └── service/                         # RoomService, DashboardService, UserService, AuthService
+│   └── src/test/java/com/hotel/booking/
+│       └── DesignPatternsIntegrationTest.java
+└── frontend/                                # Next.js 14 App Router (TypeScript + Tailwind CSS)
+    └── src/
+        ├── app/
+        │   ├── page.tsx                     # Trang chủ & Bộ lọc phòng đa tiêu chí
+        │   ├── rooms/[id]/page.tsx          # Chi tiết phòng, Báo giá Decorator & Cổng thanh toán VietQR/Thẻ
+        │   ├── my-bookings/page.tsx         # Lịch sử đặt phòng & Thông báo In-App
+        │   └── admin/page.tsx               # Admin Sidebar Portal (6 phân hệ quản trị)
+        ├── components/
+        │   ├── Navbar.tsx                   # Thanh điều hướng
+        │   └── VnDateInput.tsx              # Bộ chọn lịch chuẩn Ngày/Tháng/Năm (dd/MM/yyyy)
+        └── lib/api.ts                       # Tầng giao tiếp REST API & formatDateVn
+```
+
+#### B. Hướng dẫn khởi chạy hệ thống
+1. **Khởi chạy Backend (Cổng `8080`)**:
+   ```powershell
+   cd backend
+   .\mvn.cmd spring-boot:run
+   ```
+   *(Hệ thống tự động tạo CSDL `hotel_booking_db`, nâng cấp cột ảnh lên `LONGTEXT` và nạp dữ liệu mẫu gồm tài khoản Admin `admin@hotel.com` / `admin123` và Khách hàng `user@hotel.com` / `user123`).*
+2. **Khởi chạy Frontend (Cổng `3000`)**:
+   ```powershell
+   cd frontend
+   npm run dev
+   ```
 
 ---
 
-### 4.2. Bộ Kịch bản Kiểm thử & Demo Thực nghiệm (Test Cases)
+### 4.2. Các tính năng thực tế nổi bật đã hoàn thiện và nâng cấp
 
-Dưới đây là 10 kịch bản kiểm thử thực nghiệm trên giao diện (`http://localhost:3000`) và bộ JUnit 5 (`DesignPatternsIntegrationTest`) để minh chứng trực tiếp với giảng viên:
+1. **Cổng Thanh toán Trực tuyến Mô phỏng (VietQR & Thẻ Quốc tế Sandbox)**:
+   - Khi khách hàng chọn `E_WALLET` (Ví điện tử VNPay/MoMo), giao diện hiển thị Modal **mã QR chuyển khoản VietQR động** tính đúng tổng tiền thanh toán cuối cùng và nội dung chuyển khoản theo số phòng.
+   - Khi khách hàng chọn `CREDIT_CARD`, giao diện hiển thị cổng nhập thông tin thẻ **Visa/Mastercard Sandbox** (số thẻ, tên chủ thẻ, ngày hết hạn, CVV) trước khi gọi `BookingFacade` xác nhận thanh toán `PAID`.
+2. **Đồng bộ tự động Trạng thái Đơn đặt phòng & Trạng thái Phòng vật lý**:
+   - Đặt phòng thanh toán Online (`PAID`) hoặc Admin duyệt đơn (`CONFIRM`) / `CHECK_IN` $\rightarrow$ Phòng tự động chuyển sang **`OCCUPIED` (Đang có khách)**.
+   - Khách trả phòng (`CHECK_OUT`) hoặc hủy đơn (`CANCEL`) $\rightarrow$ Phòng tự động giải phóng về **`AVAILABLE` (Sẵn sàng)** nếu không còn đơn hoạt động nào khác.
+3. **Gửi Email Hóa đơn Xác nhận thực tế qua Gmail SMTP**:
+   - `EmailNotificationObserver` gửi email HTML định dạng bảng kê hóa đơn chuyên nghiệp tới địa chỉ email đăng ký của khách hàng ngay khi đặt phòng hoặc chuyển trạng thái.
+4. **Quản lý Hình ảnh Đa nguồn (Upload trực tiếp từ máy tính & Giải mã Link chia sẻ)**:
+   - Hỗ trợ chọn ảnh trực tiếp từ máy tính (không giới hạn độ phân giải/MP, tự động chuẩn hóa qua HTML5 Canvas và lưu vào cột `LONGTEXT` trong MySQL).
+   - Hỗ trợ dán link trang chia sẻ bất kỳ (`https://ibb.co/...`, `imgur.com`, `drive.google.com`, `postimg.cc`): Hệ thống tự động trích xuất link ảnh gốc (`og:image`) qua `/api/rooms/resolve-image` và hiển thị **ảnh xem trước (Live Preview)** ngay trong Modal Quản trị.
+5. **Chuẩn hóa định dạng Ngày/Tháng/Năm Việt Nam (`dd/MM/yyyy`)**:
+   - Component `VnDateInput` và hàm `formatDateVn` đảm bảo toàn bộ ô nhập ngày và bảng hiển thị trên cả User Portal và Admin Portal luôn hiển thị theo chuẩn Việt Nam `Ngày/Tháng/Năm`.
+
+---
+
+### 4.3. Bộ 12 Kịch bản Kiểm thử thực nghiệm (Test Cases) & Kết quả JUnit 5
 
 | Mã TC | Tên kịch bản kiểm thử | Các bước thực hiện trên Giao diện / Hệ thống | Kết quả đạt được | Design Pattern minh chứng |
 | :--- | :--- | :--- | :--- | :--- |
-| **TC-01** | Tìm kiếm & Lọc phòng đa tiêu chí | Tại trang chủ `/`, chọn Địa điểm = `Đà Nẵng`, Hạng phòng = `DELUXE`, Số khách = `2`, Giá từ `1.000.000` đến `2.000.000`, chọn ngày Check-in/Check-out rồi nhấn **Tìm kiếm & Lọc phòng**. | Hệ thống lọc chính xác phòng `P201 - Deluxe Ocean Panorama` và tự động loại trừ các phòng đã có lịch đặt trùng ngày. | **Builder Pattern** (`RoomSearchCriteria`) |
-| **TC-02** | Admin quản lý Hạng phòng & Thêm phòng mới qua Factory | Đăng nhập `admin@hotel.com` $\rightarrow$ Sidebar **Hạng phòng**: Tạo mới hạng `VIP_VILLA` (Giá mặc định `4.500.000đ`, Sức chứa `6`). Sau đó sang mục **Quản lý Phòng** $\rightarrow$ Nhấn **+ Thêm Phòng mới**, chọn hạng `VIP_VILLA`. | Form tự động điền giá sàn, sức chứa, loại giường, tiện nghi chuẩn của hạng `VIP_VILLA`; `RoomFactory` khởi tạo phòng thành công. | **Factory Method Pattern** (`RoomFactory`, `RoomCategory`, `RoomTemplate`) |
-| **TC-03** | Tính giá động khi chọn Dịch vụ đi kèm | Mở trang chi tiết phòng `/rooms/1`, chọn 2 đêm, 2 khách. Lần lượt tích chọn **Buffet sáng**, **Xe đưa đón sân bay**, **Giường phụ**, **Gói Spa**. | Bảng **Tổng thanh toán** cập nhật tức thì từng dịch vụ bọc thêm và hiển thị chuỗi mô tả đầy đủ từ `BookingCostComponent.getDescription()`. | **Decorator Pattern** (`BookingServiceDecorator`, `BookingCostBuilderService`) |
-| **TC-04** | Admin tạo Voucher theo Hạng phòng & User áp dụng | Admin vào mục **Quản lý Voucher** $\rightarrow$ Tạo mã `DELUXE20` (Giảm 20%, chọn áp dụng riêng cho hạng `DELUXE`). User thử áp mã `DELUXE20` ở phòng `STANDARD` vs. phòng `DELUXE`. | Ở phòng `STANDARD`, hệ thống báo lỗi không thuộc phạm vi áp dụng. Ở phòng `DELUXE`, `PercentageDiscountStrategy` giảm chính xác 20% tổng hóa đơn. | **Strategy Pattern** (`DiscountStrategy`, `DiscountContextService`) |
-| **TC-05** | Đặt phòng trọn gói & Thanh toán đa phương thức | User chọn phương thức **Ví điện tử (`E_WALLET`)** hoặc **Thanh toán tại khách sạn (`PAY_AT_HOTEL`)** rồi nhấn **Xác nhận Đặt phòng**. | `BookingFacade` điều phối toàn bộ 6 bước. Với `E_WALLET`, đơn tự động chuyển sang `CONFIRMED` (`PAID`). Với `PAY_AT_HOTEL`, đơn ở trạng thái `PENDING`. | **Facade Pattern** (`BookingFacade`) + **Builder** (`BookingOrder`) + **Strategy** (`PaymentStrategy`) |
-| **TC-06** | Kiểm soát vòng đời trạng thái Booking (Chặn thao tác sai) | Admin vào mục **Quản lý Booking**:<br>1. Thử bấm `Check-in` khi đơn đang `PENDING` $\rightarrow$ Bị chặn.<br>2. Bấm `Duyệt` (`CONFIRMED`) $\rightarrow$ `Check-in` (`CHECKED_IN`).<br>3. Thử bấm `Hủy` khi đang `CHECKED_IN` $\rightarrow$ Bị chặn. | Các lớp `PendingState`, `ConfirmedState`, `CheckedInState` bảo vệ chặt chẽ quy tắc nghiệp vụ, ném lỗi rõ ràng khi thao tác sai thứ tự. | **State Pattern** (`BookingState`, `BookingStateResolver`) |
-| **TC-07** | Hủy đơn đặt phòng & Giải phóng lịch phòng | User (hoặc Admin) nhấn **Hủy đặt phòng** trên một đơn đang ở trạng thái `PENDING` hoặc `CONFIRMED`. | Đơn được kiểm tra qua `State Pattern`, gửi thông báo hủy qua `Observer Pattern` và được xóa khỏi danh sách booking đang hoạt động ở cả User và Admin. | **State Pattern** + **Observer Pattern** |
-| **TC-08** | Thông báo tự động & Đánh dấu đã đọc | Sau khi đặt phòng hoặc khi Admin duyệt đơn, User mở trang `/my-bookings` quan sát cột **Thông báo Hệ thống** và nhấn **Đã đọc**. | `InAppNotificationObserver` tạo thông báo tức thì trên giao diện; `EmailNotificationObserver` và `AuditLogObserver` ghi nhận log đầy đủ. | **Observer Pattern** (`BookingObserver`, `BookingEventPublisher`) |
-| **TC-09** | Quản lý Người dùng & Xem chi tiết lịch sử User | Admin vào mục **Quản lý Người dùng**: Thêm user mới, nhấn **Xem chi tiết** một khách hàng, hoặc nhấn **Khóa TK**. | Modal chi tiết hiển thị tổng số đơn, tổng chi tiêu và danh sách lịch sử booking của khách hàng đó; tài khoản bị khóa không thể đăng nhập. | Spring Security + RBAC + Clean Service Architecture |
-| **TC-10** | Kiểm thử tự động JUnit 5 cho 7 Design Patterns | Chạy lệnh `mvn test` tại thư mục `backend` (`DesignPatternsIntegrationTest`). | Toàn bộ 4 bài kiểm thử tích hợp chạy qua tất cả 7 Design Patterns đều đạt `Tests run: 4, Failures: 0, Errors: 0 — BUILD SUCCESS`. | Toàn bộ **07 Design Patterns** |
+| **TC-01** | Tìm kiếm & Lọc phòng đa tiêu chí (`dd/MM/yyyy`) | Tại trang chủ `/`, chọn Địa điểm = `Đà Nẵng`, Hạng phòng = `DELUXE`, Số khách = `2`, Giá từ `1.000.000` đến `2.000.000`, chọn ngày nhận/trả chuẩn `dd/MM/yyyy`. | Lọc chính xác phòng `P201 - Deluxe Ocean Panorama` và loại trừ các phòng trùng lịch. | **Builder Pattern** (`RoomSearchCriteria`) |
+| **TC-02** | Admin quản lý Hạng phòng & Thêm phòng mới qua Factory | Đăng nhập `admin@hotel.com` $\rightarrow$ Tạo mới hạng phòng `VIP_VILLA` $\rightarrow$ Sang mục **Quản lý Phòng** chọn hạng `VIP_VILLA`. | Form tự động điền giá sàn, sức chứa, loại giường, tiện nghi chuẩn của `VIP_VILLA`; `RoomFactory` khởi tạo phòng thành công. | **Factory Method Pattern** (`RoomFactory`, `RoomTemplate`) |
+| **TC-03** | Tải ảnh từ máy tính & Dán link chia sẻ `ibb.co` | Trong Modal **Quản lý Phòng** và **Quản lý Hạng phòng**, dán `https://ibb.co/xc809bj` hoặc bấm **Chọn ảnh từ máy tính**. | Link `ibb.co` tự động giải mã thành `https://i.ibb.co/LqhWjyt/images.jpg`; ảnh từ máy tính lưu mượt mà vào cột `LONGTEXT` kèm ảnh Preview. | Clean Service Architecture + MySQL `LONGTEXT` |
+| **TC-04** | Tính giá động khi chọn Dịch vụ đi kèm | Mở `/rooms/1`, chọn 2 đêm, 2 khách. Tích chọn **Buffet sáng**, **Xe đưa đón sân bay**, **Giường phụ**, **Gói Spa**. | Bảng **Tổng thanh toán** cộng dồn tức thì từng dịch vụ bọc thêm và xuất mô tả đầy đủ từ `BookingCostComponent.getDescription()`. | **Decorator Pattern** (`BookingServiceDecorator`) |
+| **TC-05** | Admin tạo Voucher theo Hạng phòng & User áp dụng | Admin tạo mã `DELUXE20` (Giảm 20%, chỉ áp dụng cho `DELUXE`). User thử áp mã ở phòng `STANDARD` và phòng `DELUXE`. | Phòng `STANDARD` báo lỗi không thuộc phạm vi áp dụng; phòng `DELUXE` được giảm chính xác 20%. | **Strategy Pattern** (`DiscountStrategy`) |
+| **TC-06** | Thanh toán qua Cổng VietQR / Thẻ Quốc tế Sandbox | User chọn `E_WALLET` (quét mã VietQR) hoặc `CREDIT_CARD` (nhập thẻ Sandbox) và bấm **Tôi đã hoàn tất thanh toán**. | Đơn đặt phòng được tạo với `PaymentStatus = PAID`, tự động chuyển sang `CONFIRMED` và phòng chuyển sang `OCCUPIED`. | **Facade Pattern** + **Strategy Pattern** + **State Pattern** |
+| **TC-07** | Đặt phòng trả tại khách sạn (`PAY_AT_HOTEL`) | User chọn `PAY_AT_HOTEL` và nhấn **Xác nhận Đặt phòng**. | Đơn ở trạng thái `PENDING` (`PaymentStatus = PENDING`), chờ Admin xác nhận. | **Strategy Pattern** (`PayAtHotelPaymentStrategy`) |
+| **TC-08** | Kiểm soát vòng đời trạng thái Booking & Đồng bộ trạng thái phòng | Admin vào **Quản lý Booking**:<br>1. Bấm `Duyệt` (`CONFIRMED`) $\rightarrow$ Phòng thành `OCCUPIED`.<br>2. Bấm `Check-in` (`CHECKED_IN`) $\rightarrow$ Tự động thu tiền `PAID`.<br>3. Bấm `Check-out` (`CHECKED_OUT`) $\rightarrow$ Phòng tự động về `AVAILABLE`. | Các lớp `PendingState`, `ConfirmedState`, `CheckedInState` bảo vệ chặt chẽ quy tắc nghiệp vụ và đồng bộ trạng thái phòng chính xác. | **State Pattern** (`BookingState`, `BookingStateResolver`) |
+| **TC-09** | Chặn thao tác sai thứ tự trạng thái | Admin thử bấm `Check-in` khi đơn đang `PENDING` hoặc thử bấm `Hủy` khi khách đã `CHECKED_IN`. | Hệ thống chặn thao tác và hiển thị thông báo lỗi nghiệp vụ tiếng Việt rõ ràng. | **State Pattern** |
+| **TC-10** | Gửi Email Hóa đơn HTML qua SMTP & Thông báo In-App | Đặt phòng bằng tài khoản có email thật và kiểm tra hộp thư đến + mục **Thông báo Hệ thống** tại `/my-bookings`. | Khách hàng nhận được **Email HTML bảng kê hóa đơn chi tiết** từ hệ thống và thông báo In-App tức thời. | **Observer Pattern** (`EmailNotificationObserver`, `InAppNotificationObserver`) |
+| **TC-11** | Hủy đơn đặt phòng & Giải phóng phòng | User (hoặc Admin) nhấn **Hủy đặt phòng** trên đơn đang `PENDING` hoặc `CONFIRMED`. | Đơn được kiểm tra qua `State Pattern`, gửi thông báo hủy qua `Observer Pattern`, xóa khỏi danh sách hoạt động và trả phòng về `AVAILABLE`. | **State Pattern** + **Observer Pattern** |
+| **TC-12** | Kiểm thử tự động JUnit 5 cho 07 Design Patterns | Chạy `.\mvn.cmd test` tại thư mục `backend` (`DesignPatternsIntegrationTest`). | Toàn bộ 4 bài kiểm thử tích hợp kiểm chứng cả 7 Design Patterns đều đạt `Tests run: 4, Failures: 0, Errors: 0 — BUILD SUCCESS`. | Toàn bộ **07 Design Patterns** |
 
 ---
 
-### 4.3. Đánh giá Hiệu năng, Khả năng Bảo trì & Kết luận
+### 4.4. Bảng so sánh Ưu/Nhược điểm khi áp dụng Design Patterns & Đánh giá kết quả
 
-1. **Đánh giá Hiệu năng (Performance)**:
-   - Bảng `rooms` và `bookings` được đánh chỉ mục (`idx_room_search`, `idx_booking_dates`), giúp truy vấn kiểm tra trùng lịch đặt phòng (`existsOverlappingBooking`) đạt thời gian phản hồi `< 15ms`.
-   - Các đối tượng `DiscountStrategy`, `PaymentStrategy`, `BookingState`, `RoomTemplate` và `BookingObserver` được khởi tạo một lần dưới dạng Spring Singleton Beans và tra cứu qua cấu trúc `Map` với độ phức tạp $O(1)$.
-2. **Đánh giá Khả năng Bảo trì & Mở rộng (Maintainability & Extensibility)**:
-   - Nhờ áp dụng **5 nguyên lý SOLID** và **07 Design Patterns**, độ phức tạp mã nguồn (*Cyclomatic Complexity*) ở từng lớp đều rất thấp (mỗi lớp chỉ dài 30–80 dòng code, đảm nhận đúng một trách nhiệm).
-   - Khi khách sạn mở rộng thêm hạng phòng mới, dịch vụ đi kèm mới, loại mã giảm giá mới, cổng thanh toán mới hoặc kênh thông báo mới, hệ thống chỉ cần **thêm class mới** mà không làm xáo trộn mã nguồn hiện có.
+| Mẫu Thiết Kế | Thiết kế thông thường (Không dùng Pattern) | Ưu điểm đạt được trong Dự án | Sự đánh đổi (Trade-offs) | Nguyên lý SOLID tuân thủ |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Builder Pattern** | Dùng Constructor 8–9 tham số hoặc gọi `setter` rời rạc; dễ truyền nhầm tham số và thiếu kiểm tra hợp lệ tập trung. | • Cú pháp *Fluent API* trực quan.<br>• Đảm bảo tính bất biến (*Immutability*) và gom toàn bộ logic `validate()` tại `.build()`. | • Cần viết thêm lớp `Builder` tĩnh bên trong lớp sản phẩm. | **SRP** |
+| **2. Factory Method** | Dùng `switch-case` theo mã hạng phòng ngay trong `RoomService` để gán giá, sức chứa, giường và tiện nghi. | • Đóng gói hoàn toàn cấu hình chuẩn vào `RoomTemplate` và `RoomCategory`.<br>• Thêm hạng phòng mới không cần sửa `RoomService`. | • Tăng số lượng lớp `Template` cho các hạng phòng tiêu chuẩn. | **OCP & SRP** |
+| **3. Decorator Pattern** | Dùng nhiều câu lệnh `if (hasBreakfast) total += ...` hoặc tạo hàng chục lớp con cho từng tổ hợp dịch vụ. | • Kết hợp động bất kỳ tổ hợp dịch vụ đi kèm nào lúc runtime.<br>• Tự động tổng hợp cả chi phí lẫn mô tả hóa đơn. | • Tạo ra các đối tượng bọc lồng nhau trong bộ nhớ khi tính toán. | **OCP & LSP** |
+| **4. Facade Pattern** | `BookingController` và `AdminController` phải gọi trực tiếp 6–7 Services khác nhau, gây lặp code và phụ thuộc chặt. | • Cung cấp mặt tiền duy nhất (`BookingFacade`), điều phối trọn gói 6 hệ thống con và đồng bộ trạng thái phòng. | • Lớp `Facade` cần được giữ gọn, chỉ điều phối chứ không chứa logic chi tiết. | **DIP & SRP** |
+| **5. Strategy Pattern** | Dùng khối `if-else` / `switch-case` dài để tính các loại Voucher hoặc xử lý từng phương thức thanh toán. | • Mỗi công thức giảm giá và phương thức thanh toán tách thành một lớp độc lập, tra cứu qua `Map` với thời gian $O(1)$. | • Số lượng lớp tăng tương ứng với số chiến lược. | **OCP, LSP, ISP & DIP** |
+| **6. State Pattern** | Kiểm tra điều kiện lồng nhau (`if (status == PENDING && action == CHECK_IN)`) ở mọi hàm cập nhật. | • Loại bỏ hoàn toàn `if-else` kiểm tra trạng thái.<br>• Mỗi lớp trạng thái tự bảo vệ tính toàn vẹn của đơn và đồng bộ trạng thái phòng. | • Cần tạo 5 lớp tương ứng với 5 trạng thái của đơn đặt phòng. | **SRP & OCP** |
+| **7. Observer Pattern** | Gọi cứng lưu thông báo, gửi mail SMTP và ghi log ngay trong hàm đặt phòng. | • Tách rời hoàn toàn luồng đặt phòng chính khỏi các kênh thông báo (*Loose Coupling*).<br>• Dễ dàng mở rộng thêm kênh thông báo mới. | • Cần xử lý an toàn ngoại lệ trong từng Observer (như lỗi mạng SMTP) để không làm gián đoạn giao dịch chính. | **OCP & DIP** |

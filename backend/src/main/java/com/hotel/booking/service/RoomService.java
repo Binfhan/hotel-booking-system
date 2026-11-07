@@ -21,15 +21,37 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class RoomService {
+
+    private static final Pattern OG_IMAGE_PATTERN_1 = Pattern.compile(
+            "<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern OG_IMAGE_PATTERN_2 = Pattern.compile(
+            "<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:image[\"']",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern IBB_DIRECT_PATTERN = Pattern.compile(
+            "(https?://i\\.ibb\\.co/[^\"'\\s<>]+)",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern DRIVE_ID_PATTERN = Pattern.compile("/file/d/([a-zA-Z0-9_-]+)");
 
     private final RoomRepository roomRepository;
     private final RoomCategoryRepository roomCategoryRepository;
@@ -62,7 +84,7 @@ public class RoomService {
                 .defaultBedType(request.getDefaultBedType().trim())
                 .defaultDescription(request.getDefaultDescription())
                 .defaultAmenities(request.getDefaultAmenities())
-                .defaultImageUrl(request.getDefaultImageUrl())
+                .defaultImageUrl(normalizeImageUrl(request.getDefaultImageUrl()))
                 .build();
 
         return toCategoryDto(roomCategoryRepository.save(category));
@@ -89,7 +111,7 @@ public class RoomService {
         category.setDefaultBedType(request.getDefaultBedType().trim());
         category.setDefaultDescription(request.getDefaultDescription());
         category.setDefaultAmenities(request.getDefaultAmenities());
-        category.setDefaultImageUrl(request.getDefaultImageUrl());
+        category.setDefaultImageUrl(normalizeImageUrl(request.getDefaultImageUrl()));
 
         RoomCategory saved = roomCategoryRepository.save(category);
 
@@ -159,8 +181,8 @@ public class RoomService {
 
     public Room validateRoomForBooking(Long roomId, LocalDate checkIn, LocalDate checkOut, int guestCount) {
         Room room = getRoomEntityById(roomId);
-        if (room.getStatus() != RoomStatus.AVAILABLE) {
-            throw new BusinessRuleException("Phòng " + room.getRoomNumber() + " hiện đang bảo trì hoặc không sẵn sàng đón khách.");
+        if (room.getStatus() == RoomStatus.MAINTENANCE) {
+            throw new BusinessRuleException("Phòng " + room.getRoomNumber() + " hiện đang bảo trì, không sẵn sàng đón khách.");
         }
         if (guestCount > room.getCapacity()) {
             throw new BusinessRuleException(String.format(
@@ -184,6 +206,17 @@ public class RoomService {
             throw new BusinessRuleException("Số phòng '" + request.getRoomNumber() + "' đã tồn tại.");
         }
 
+        List<String> resolvedImages = null;
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            resolvedImages = new ArrayList<>();
+            for (String rawUrl : request.getImages()) {
+                String norm = normalizeImageUrl(rawUrl);
+                if (norm != null && !norm.isBlank()) {
+                    resolvedImages.add(norm);
+                }
+            }
+        }
+
         Room room = roomFactory.createRoom(
                 request.getRoomNumber().trim(),
                 request.getName().trim(),
@@ -194,7 +227,7 @@ public class RoomService {
                 request.getBedType(),
                 request.getDescription(),
                 request.getStatus(),
-                request.getImages(),
+                resolvedImages,
                 this::resolveOrCreateAmenity
         );
 
@@ -244,10 +277,12 @@ public class RoomService {
 
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             room.getImages().clear();
-            for (int i = 0; i < request.getImages().size(); i++) {
-                String url = request.getImages().get(i);
-                if (url != null && !url.isBlank()) {
-                    room.addImage(url.trim(), i == 0);
+            int added = 0;
+            for (String rawUrl : request.getImages()) {
+                String norm = normalizeImageUrl(rawUrl);
+                if (norm != null && !norm.isBlank()) {
+                    room.addImage(norm, added == 0);
+                    added++;
                 }
             }
         }
@@ -274,6 +309,76 @@ public class RoomService {
     private Amenity resolveOrCreateAmenity(String name) {
         return amenityRepository.findByNameIgnoreCase(name)
                 .orElseGet(() -> amenityRepository.save(Amenity.builder().name(name).icon("sparkles").build()));
+    }
+
+    public String normalizeImageUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return rawUrl;
+        }
+        String url = rawUrl.trim();
+        if (url.startsWith("data:image/")) {
+            return url;
+        }
+
+        // 1. Google Drive share link -> direct image view link
+        if (url.contains("drive.google.com")) {
+            Matcher driveMatcher = DRIVE_ID_PATTERN.matcher(url);
+            if (driveMatcher.find()) {
+                return "https://lh3.googleusercontent.com/d/" + driveMatcher.group(1);
+            }
+        }
+
+        // 2. Imgur viewer page -> direct i.imgur.com link
+        if (url.matches("^https?://(www\\.)?imgur\\.com/[a-zA-Z0-9]+$")) {
+            String id = url.substring(url.lastIndexOf('/') + 1);
+            return "https://i.imgur.com/" + id + ".jpg";
+        }
+
+        // 3. Skip known direct image CDNs immediately
+        if (url.contains("images.unsplash.com")
+                || url.contains("plus.unsplash.com")
+                || url.contains("i.ibb.co/")
+                || url.contains("i.imgur.com/")
+                || url.contains("i.postimg.cc/")
+                || url.contains("lh3.googleusercontent.com/")) {
+            return url;
+        }
+
+        // 4. If it's a webpage share link (e.g. https://ibb.co/xc809bj, postimg.cc, etc.) without an image extension
+        boolean hasImageExt = url.matches("(?i).*\\.(jpg|jpeg|png|webp|gif|avif|svg)(\\?.*)?$");
+        if (!hasImageExt && url.startsWith("http")) {
+            try {
+                HttpClient client = HttpClient.newBuilder()
+                        .followRedirects(HttpClient.Redirect.NORMAL)
+                        .connectTimeout(Duration.ofSeconds(5))
+                        .build();
+                HttpRequest req = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(Duration.ofSeconds(6))
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                        .GET()
+                        .build();
+                HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+                String body = resp.body();
+                if (body != null) {
+                    Matcher m1 = OG_IMAGE_PATTERN_1.matcher(body);
+                    if (m1.find()) {
+                        return m1.group(1).trim();
+                    }
+                    Matcher m2 = OG_IMAGE_PATTERN_2.matcher(body);
+                    if (m2.find()) {
+                        return m2.group(1).trim();
+                    }
+                    Matcher mIbb = IBB_DIRECT_PATTERN.matcher(body);
+                    if (mIbb.find()) {
+                        return mIbb.group(1).trim();
+                    }
+                }
+            } catch (Exception ignored) {
+                // Keep original URL if network lookup fails
+            }
+        }
+        return url;
     }
 
     private boolean matchesCriteria(Room room, RoomSearchCriteria c) {

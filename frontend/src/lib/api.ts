@@ -74,6 +74,18 @@ export const formatVnd = (amount: number): string => {
   }).format(amount || 0)
 }
 
+export const formatDateVn = (dateStr?: string | null): string => {
+  if (!dateStr) {
+    return ''
+  }
+  const clean = dateStr.split('T')[0]
+  const parts = clean.split('-')
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`
+  }
+  return dateStr
+}
+
 export const hotelApi = {
   login: (email: string, password: string): Promise<AuthResponse> =>
     requestApi<AuthResponse>('/auth/login', {
@@ -309,5 +321,10 @@ export const hotelApi = {
   toggleLockUserAdmin: (id: number): Promise<UserItem> =>
     requestApi<UserItem>(`/admin/users/${id}/toggle-lock`, {
       method: 'PATCH'
-    })
+    }),
+
+  resolveImageUrl: (url: string): Promise<{ url: string }> =>
+    requestApi<{ url: string }>(
+      `/rooms/resolve-image?url=${encodeURIComponent(url)}`
+    )
 }

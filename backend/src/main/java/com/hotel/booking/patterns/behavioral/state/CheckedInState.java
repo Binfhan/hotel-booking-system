@@ -3,6 +3,7 @@ package com.hotel.booking.patterns.behavioral.state;
 import com.hotel.booking.entity.Booking;
 import com.hotel.booking.enums.BookingStatus;
 import com.hotel.booking.enums.PaymentStatus;
+import com.hotel.booking.enums.RoomStatus;
 import com.hotel.booking.exception.BusinessRuleException;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,9 @@ public class CheckedInState implements BookingState {
     @Override
     public void checkOut(Booking booking) {
         booking.setStatus(BookingStatus.CHECKED_OUT);
+        if (booking.getRoom() != null) {
+            booking.getRoom().setStatus(RoomStatus.AVAILABLE);
+        }
         if (booking.getPayment() != null && booking.getPayment().getPaymentStatus() != PaymentStatus.PAID) {
             booking.getPayment().setPaymentStatus(PaymentStatus.PAID);
             booking.getPayment().setPaidAt(LocalDateTime.now());

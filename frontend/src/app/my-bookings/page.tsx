@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { formatVnd, hotelApi } from '@/lib/api'
+import { formatDateVn, formatVnd, hotelApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { BookingItem, NotificationItem } from '@/types/hotel'
 
@@ -204,13 +204,13 @@ const MyBookingsPage = (): React.JSX.Element => {
                   <div>
                     <span className='block text-slate-400'>Nhận phòng</span>
                     <span className='font-semibold text-slate-800'>
-                      {b.checkInDate}
+                      {formatDateVn(b.checkInDate)}
                     </span>
                   </div>
                   <div>
                     <span className='block text-slate-400'>Trả phòng</span>
                     <span className='font-semibold text-slate-800'>
-                      {b.checkOutDate} ({b.nights} đêm)
+                      {formatDateVn(b.checkOutDate)} ({b.nights} đêm)
                     </span>
                   </div>
                   <div>

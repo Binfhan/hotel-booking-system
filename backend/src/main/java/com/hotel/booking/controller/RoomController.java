@@ -63,4 +63,10 @@ public class RoomController {
     public ResponseEntity<List<VoucherDto>> getActiveVouchers() {
         return ResponseEntity.ok(dashboardService.getActiveVouchers());
     }
+
+    @GetMapping("/rooms/resolve-image")
+    public ResponseEntity<java.util.Map<String, String>> resolveImageUrl(@RequestParam String url) {
+        String resolved = roomService.normalizeImageUrl(url);
+        return ResponseEntity.ok(java.util.Map.of("url", resolved != null ? resolved : url));
+    }
 }

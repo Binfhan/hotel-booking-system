@@ -39,6 +39,6 @@ public class RoomCategory {
     @Column(name = "default_amenities", columnDefinition = "TEXT")
     private String defaultAmenities;
 
-    @Column(name = "default_image_url", length = 500)
+    @Column(name = "default_image_url", columnDefinition = "LONGTEXT")
     private String defaultImageUrl;
 }

@@ -173,6 +173,7 @@ class DesignPatternsIntegrationTest {
         BookingResponse checkedIn = bookingFacade.transitionBookingState(booking.getId(), BookingAction.CHECK_IN, admin);
         assertEquals(BookingStatus.CHECKED_IN, checkedIn.getStatus());
         assertEquals(PaymentStatus.PAID, checkedIn.getPayment().getPaymentStatus());
+        assertEquals(RoomStatus.OCCUPIED, roomService.getRoomDtoById(targetRoom.getId()).getStatus());
 
         // Cannot CANCEL after CHECKED_IN
         assertThrows(BusinessRuleException.class, () ->
@@ -181,6 +182,7 @@ class DesignPatternsIntegrationTest {
 
         BookingResponse checkedOut = bookingFacade.transitionBookingState(booking.getId(), BookingAction.CHECK_OUT, admin);
         assertEquals(BookingStatus.CHECKED_OUT, checkedOut.getStatus());
+        assertEquals(RoomStatus.AVAILABLE, roomService.getRoomDtoById(targetRoom.getId()).getStatus());
 
         // Test cancellation deletes the booking from both User and Admin active booking lists
         BookingOrder cancelOrder = BookingOrder.builder()

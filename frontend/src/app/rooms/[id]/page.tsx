@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { formatVnd, hotelApi } from '@/lib/api'
+import { formatDateVn, formatVnd, hotelApi } from '@/lib/api'
+import { VnDateInput } from '@/components/VnDateInput'
 import { useAuth } from '@/context/AuthContext'
 import type {
   AddonServiceType,
@@ -79,6 +80,11 @@ const RoomDetailPage = (): React.JSX.Element => {
   const [preview, setPreview] = useState<PriceBreakdown | null>(null)
   const [previewError, setPreviewError] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false)
+  const [cardNumber, setCardNumber] = useState<string>('4242 4242 4242 4242')
+  const [cardHolder, setCardHolder] = useState<string>('NGUYEN VAN A')
+  const [cardExpiry, setCardExpiry] = useState<string>('12/28')
+  const [cardCvv, setCardCvv] = useState<string>('888')
 
   useEffect(() => {
     const loadRoomAndVouchers = async (): Promise<void> => {
@@ -150,12 +156,7 @@ const RoomDetailPage = (): React.JSX.Element => {
     )
   }
 
-  const handlePlaceBooking = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+  const executeBookingSubmission = async (): Promise<void> => {
     setSubmitting(true)
     setPreviewError('')
     try {
@@ -169,14 +170,29 @@ const RoomDetailPage = (): React.JSX.Element => {
         paymentMethod,
         specialRequests
       })
+      setShowPaymentModal(false)
       router.push('/my-bookings')
     } catch (err) {
+      setShowPaymentModal(false)
       setPreviewError(
         err instanceof Error ? err.message : 'Đặt phòng thất bại'
       )
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handlePlaceBooking = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!user) {
+      router.push('/login')
+      return
+    }
+    if (paymentMethod === 'E_WALLET' || paymentMethod === 'CREDIT_CARD') {
+      setShowPaymentModal(true)
+      return
+    }
+    await executeBookingSubmission()
   }
 
   if (loading) {
@@ -286,12 +302,16 @@ const RoomDetailPage = (): React.JSX.Element => {
                   className={`font-bold ${
                     room.status === 'AVAILABLE'
                       ? 'text-emerald-600'
-                      : 'text-amber-600'
+                      : room.status === 'OCCUPIED'
+                        ? 'text-indigo-600'
+                        : 'text-amber-600'
                   }`}
                 >
                   {room.status === 'AVAILABLE'
                     ? '● Sẵn sàng đón khách'
-                    : '● Đang bảo trì'}
+                    : room.status === 'OCCUPIED'
+                      ? '● Đang có khách lưu trú'
+                      : '● Đang bảo trì'}
                 </span>
               </div>
             </div>
@@ -343,24 +363,22 @@ const RoomDetailPage = (): React.JSX.Element => {
                 <label className='mb-1 block text-xs font-semibold text-slate-700'>
                   Ngày nhận phòng
                 </label>
-                <input
-                  type='date'
+                <VnDateInput
                   required
                   value={checkInDate}
-                  onChange={(e) => setCheckInDate(e.target.value)}
-                  className='w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none'
+                  onChange={(val) => setCheckInDate(val)}
+                  className='w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus-within:border-indigo-600'
                 />
               </div>
               <div>
                 <label className='mb-1 block text-xs font-semibold text-slate-700'>
                   Ngày trả phòng
                 </label>
-                <input
-                  type='date'
+                <VnDateInput
                   required
                   value={checkOutDate}
-                  onChange={(e) => setCheckOutDate(e.target.value)}
-                  className='w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:border-indigo-600 focus:outline-none'
+                  onChange={(val) => setCheckOutDate(val)}
+                  className='w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus-within:border-indigo-600'
                 />
               </div>
             </div>
@@ -551,18 +569,178 @@ const RoomDetailPage = (): React.JSX.Element => {
 
             <button
               type='submit'
-              disabled={submitting || room.status !== 'AVAILABLE' || !!previewError}
+              disabled={submitting || room.status === 'MAINTENANCE' || !!previewError}
               className='w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50'
             >
               {submitting
                 ? 'Đang xử lý đặt phòng...'
-                : user
-                  ? 'Xác nhận Đặt phòng & Thanh toán'
-                  : 'Đăng nhập để Đặt phòng'}
+                : !user
+                  ? 'Đăng nhập để Đặt phòng'
+                  : paymentMethod === 'PAY_AT_HOTEL'
+                    ? 'Xác nhận Đặt phòng (Thanh toán tại quầy)'
+                    : 'Tiếp tục tới Cổng Thanh toán Online'}
             </button>
           </div>
         </form>
       </div>
+
+      {/* Modal Cổng Thanh toán Trực tuyến (VietQR E-Wallet & Credit Card Sandbox) */}
+      {showPaymentModal && preview && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm'>
+          <div className='w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'>
+            <div className='flex items-center justify-between bg-indigo-900 px-6 py-4 text-white'>
+              <div>
+                <span className='text-[11px] font-semibold uppercase tracking-wider text-indigo-200'>
+                  Strategy Pattern • Online Payment Gateway
+                </span>
+                <h3 className='text-base font-bold'>
+                  {paymentMethod === 'E_WALLET'
+                    ? 'Cổng Thanh toán QR Ví điện tử / Ngân hàng'
+                    : 'Cổng Thanh toán Thẻ Quốc tế Visa / Master'}
+                </h3>
+              </div>
+              <button
+                type='button'
+                onClick={() => setShowPaymentModal(false)}
+                className='rounded-lg p-1 text-indigo-200 hover:bg-indigo-800 hover:text-white'
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className='space-y-4 p-6 text-xs text-slate-700'>
+              <div className='rounded-xl bg-slate-50 p-3.5 border border-slate-200 space-y-1.5'>
+                <div className='flex justify-between'>
+                  <span className='text-slate-500'>Phòng đặt:</span>
+                  <span className='font-bold text-slate-900'>
+                    #{room.roomNumber} - {room.name}
+                  </span>
+                </div>
+                <div className='flex justify-between'>
+                  <span className='text-slate-500'>Lịch lưu trú:</span>
+                  <span className='font-semibold'>
+                    {formatDateVn(checkInDate)} → {formatDateVn(checkOutDate)} ({preview.nights} đêm)
+                  </span>
+                </div>
+                <div className='flex justify-between border-t border-slate-200 pt-1.5 text-sm font-extrabold text-indigo-700'>
+                  <span>Số tiền thanh toán:</span>
+                  <span>{formatVnd(preview.totalAmount)}</span>
+                </div>
+              </div>
+
+              {paymentMethod === 'E_WALLET' ? (
+                <div className='flex flex-col items-center space-y-3 text-center'>
+                  <div className='overflow-hidden rounded-2xl border-2 border-indigo-600 bg-white p-2 shadow-sm'>
+                    <img
+                      src={`https://img.vietqr.io/image/MB-0333666999-compact2.png?amount=${preview.totalAmount}&addInfo=${encodeURIComponent(
+                        `BOOKING ${room.roomNumber} ${checkInDate}`
+                      )}&accountName=${encodeURIComponent('HOTEL BOOKING SYSTEM')}`}
+                      alt='VietQR Payment Code'
+                      className='h-56 w-56 object-contain'
+                    />
+                  </div>
+                  <p className='text-[11px] text-slate-500'>
+                    Mã QR đã tự động điền số tiền{' '}
+                    <strong className='text-slate-800'>
+                      {formatVnd(preview.totalAmount)}
+                    </strong>{' '}
+                    và nội dung đặt phòng{' '}
+                    <strong className='text-slate-800'>
+                      BOOKING {room.roomNumber}
+                    </strong>
+                    .
+                  </p>
+                  <div className='w-full rounded-lg bg-emerald-50 p-2.5 text-[11px] font-medium text-emerald-800 border border-emerald-200'>
+                    ✓ Sau khi bấm xác nhận bên dưới,{' '}
+                    <strong>EWalletPaymentStrategy</strong> sẽ ghi nhận trạng
+                    thái <strong>PAID</strong>, tự động duyệt đơn sang{' '}
+                    <strong>CONFIRMED</strong> và gửi Email hóa đơn chi tiết.
+                  </div>
+                </div>
+              ) : (
+                <div className='space-y-3'>
+                  <div>
+                    <label className='mb-1 block text-xs font-semibold text-slate-700'>
+                      Số thẻ Tín dụng / Ghi nợ Quốc tế (Thẻ Sandbox)
+                    </label>
+                    <input
+                      type='text'
+                      value={cardNumber}
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      className='w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:border-indigo-600 focus:outline-none'
+                    />
+                  </div>
+                  <div>
+                    <label className='mb-1 block text-xs font-semibold text-slate-700'>
+                      Tên in trên thẻ
+                    </label>
+                    <input
+                      type='text'
+                      value={cardHolder}
+                      onChange={(e) =>
+                        setCardHolder(e.target.value.toUpperCase())
+                      }
+                      className='w-full rounded-lg border border-slate-300 px-3 py-2 uppercase text-xs focus:border-indigo-600 focus:outline-none'
+                    />
+                  </div>
+                  <div className='grid grid-cols-2 gap-3'>
+                    <div>
+                      <label className='mb-1 block text-xs font-semibold text-slate-700'>
+                        Ngày hết hạn (MM/YY)
+                      </label>
+                      <input
+                        type='text'
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        className='w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:border-indigo-600 focus:outline-none'
+                      />
+                    </div>
+                    <div>
+                      <label className='mb-1 block text-xs font-semibold text-slate-700'>
+                        Mã bảo mật CVV
+                      </label>
+                      <input
+                        type='password'
+                        maxLength={4}
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value)}
+                        className='w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:border-indigo-600 focus:outline-none'
+                      />
+                    </div>
+                  </div>
+                  <div className='rounded-lg bg-emerald-50 p-2.5 text-[11px] font-medium text-emerald-800 border border-emerald-200'>
+                    ✓ Khi bấm thanh toán,{' '}
+                    <strong>CreditCardPaymentStrategy</strong> sẽ xử lý giao
+                    dịch <strong>PAID</strong>, tự động chuyển trạng thái đơn
+                    sang <strong>CONFIRMED</strong> và gửi Email hóa đơn.
+                  </div>
+                </div>
+              )}
+
+              <div className='flex gap-3 pt-2'>
+                <button
+                  type='button'
+                  disabled={submitting}
+                  onClick={() => setShowPaymentModal(false)}
+                  className='w-1/3 rounded-xl border border-slate-300 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50'
+                >
+                  Quay lại
+                </button>
+                <button
+                  type='button'
+                  disabled={submitting}
+                  onClick={() => void executeBookingSubmission()}
+                  className='w-2/3 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50'
+                >
+                  {submitting
+                    ? 'Đang xác thực giao dịch...'
+                    : `Xác nhận Đã Thanh toán (${formatVnd(preview.totalAmount)})`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

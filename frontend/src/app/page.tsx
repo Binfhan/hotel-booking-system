@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { formatVnd, hotelApi } from '@/lib/api'
+import { VnDateInput } from '@/components/VnDateInput'
 import type { RoomCategoryItem, RoomFilterParams, RoomItem } from '@/types/hotel'
 
 const HomePage = (): React.JSX.Element => {
@@ -201,11 +202,11 @@ const HomePage = (): React.JSX.Element => {
             <label className='mb-1 block text-xs font-semibold text-slate-600'>
               Ngày nhận phòng (Check-in)
             </label>
-            <input
-              type='date'
+            <VnDateInput
               value={checkInDate}
-              onChange={(e) => setCheckInDate(e.target.value)}
-              className='w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none'
+              onChange={(val) => setCheckInDate(val)}
+              placeholder='Chọn ngày (dd/mm/yyyy)'
+              className='w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus-within:border-indigo-600'
             />
           </div>
 
@@ -213,11 +214,11 @@ const HomePage = (): React.JSX.Element => {
             <label className='mb-1 block text-xs font-semibold text-slate-600'>
               Ngày trả phòng (Check-out)
             </label>
-            <input
-              type='date'
+            <VnDateInput
               value={checkOutDate}
-              onChange={(e) => setCheckOutDate(e.target.value)}
-              className='w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none'
+              onChange={(val) => setCheckOutDate(val)}
+              placeholder='Chọn ngày (dd/mm/yyyy)'
+              className='w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus-within:border-indigo-600'
             />
           </div>
 

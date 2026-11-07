@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { formatVnd, hotelApi } from '@/lib/api'
+import { formatDateVn, formatVnd, hotelApi } from '@/lib/api'
+import { VnDateInput } from '@/components/VnDateInput'
 import { useAuth } from '@/context/AuthContext'
 import type {
   BookingAction,
@@ -397,19 +398,149 @@ const AdminDashboardPage = (): React.JSX.Element => {
     setBedType(room.bedType)
     setRoomStatus(room.status)
     setDescription(room.description || '')
-    setImageUrlsText(room.images.join(', '))
+    setImageUrlsText(room.images.join('\n'))
     setAmenitiesText(room.amenities.join(', '))
     setIsRoomModalOpen(true)
+  }
+
+  const compressImageFileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const rawResult = typeof reader.result === 'string' ? reader.result : ''
+        if (!rawResult) {
+          resolve('')
+          return
+        }
+        const img = new window.Image()
+        img.onload = () => {
+          try {
+            const maxDim = 1280
+            let { width, height } = img
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width)
+                width = maxDim
+              } else {
+                width = Math.round((width * maxDim) / height)
+                height = maxDim
+              }
+            }
+            const canvas = document.createElement('canvas')
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height)
+              resolve(canvas.toDataURL('image/jpeg', 0.85))
+              return
+            }
+          } catch {
+            // Fallback to raw DataURL
+          }
+          resolve(rawResult)
+        }
+        img.onerror = () => resolve(rawResult)
+        img.src = rawResult
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const resolveShareUrlsInText = async (rawText: string): Promise<string> => {
+    const lines = rawText
+      .split(/\n|,(?!\/)/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .reduce<string[]>((acc, item) => {
+        if (
+          item.startsWith('base64,') &&
+          acc.length > 0 &&
+          acc[acc.length - 1].startsWith('data:image/')
+        ) {
+          acc[acc.length - 1] = `${acc[acc.length - 1]},${item}`
+        } else {
+          acc.push(item)
+        }
+        return acc
+      }, [])
+
+    const resolved = await Promise.all(
+      lines.map(async (line) => {
+        if (
+          line.startsWith('http') &&
+          !line.includes('i.ibb.co/') &&
+          !line.includes('images.unsplash.com') &&
+          (line.includes('ibb.co/') ||
+            line.includes('imgur.com/') ||
+            line.includes('postimg.cc/') ||
+            line.includes('drive.google.com/'))
+        ) {
+          try {
+            const res = await hotelApi.resolveImageUrl(line)
+            return res.url || line
+          } catch {
+            return line
+          }
+        }
+        return line
+      })
+    )
+    return resolved.join('\n')
+  }
+
+  const handleRoomLocalFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const files = e.target.files
+    if (!files || files.length === 0) {
+      return
+    }
+    const fileList = Array.from(files)
+    e.target.value = ''
+    for (const file of fileList) {
+      const dataUrl = await compressImageFileToDataUrl(file)
+      if (dataUrl) {
+        setImageUrlsText((prev) =>
+          prev.trim() ? `${prev.trim()}\n${dataUrl}` : dataUrl
+        )
+      }
+    }
+  }
+
+  const handleCategoryLocalFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const file = e.target.files?.[0]
+    if (!file) {
+      return
+    }
+    e.target.value = ''
+    const dataUrl = await compressImageFileToDataUrl(file)
+    if (dataUrl) {
+      setCatDefaultImageUrl(dataUrl)
+    }
   }
 
   const handleSaveRoom = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     clearNotifications()
 
-    const images = imageUrlsText
-      .split(',')
+    const resolvedText = await resolveShareUrlsInText(imageUrlsText)
+    setImageUrlsText(resolvedText)
+
+    const images = resolvedText
+      .split(/\n|,(?!\/)/)
       .map((s) => s.trim())
       .filter(Boolean)
+      .reduce<string[]>((acc, item) => {
+        if (item.startsWith('base64,') && acc.length > 0 && acc[acc.length - 1].startsWith('data:image/')) {
+          acc[acc.length - 1] = `${acc[acc.length - 1]},${item}`
+        } else {
+          acc.push(item)
+        }
+        return acc
+      }, [])
     const amenities = amenitiesText
       .split(',')
       .map((s) => s.trim())
@@ -501,6 +632,10 @@ const AdminDashboardPage = (): React.JSX.Element => {
   const handleSaveCategory = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     clearNotifications()
+    const resolvedCatUrl = catDefaultImageUrl
+      ? await resolveShareUrlsInText(catDefaultImageUrl)
+      : ''
+    setCatDefaultImageUrl(resolvedCatUrl)
     const payload: CreateOrUpdateRoomCategoryPayload = {
       code: catCode.trim().toUpperCase(),
       name: catName.trim(),
@@ -509,7 +644,7 @@ const AdminDashboardPage = (): React.JSX.Element => {
       defaultBedType: catDefaultBedType.trim(),
       defaultDescription: catDefaultDescription,
       defaultAmenities: catDefaultAmenities,
-      defaultImageUrl: catDefaultImageUrl
+      defaultImageUrl: resolvedCatUrl
     }
 
     try {
@@ -1075,7 +1210,7 @@ const AdminDashboardPage = (): React.JSX.Element => {
                               {b.roomName} ({b.roomNumber})
                             </td>
                             <td className='p-3'>
-                              {b.checkInDate} → {b.checkOutDate}
+                              {formatDateVn(b.checkInDate)} → {formatDateVn(b.checkOutDate)}
                             </td>
                             <td className='p-3 font-bold text-slate-900'>
                               {formatVnd(b.totalAmount)}
@@ -1226,7 +1361,7 @@ const AdminDashboardPage = (): React.JSX.Element => {
                           Nhận - Trả phòng
                         </span>
                         <span className='font-semibold text-slate-800'>
-                          {b.checkInDate} → {b.checkOutDate} ({b.nights} đêm,{' '}
+                          {formatDateVn(b.checkInDate)} → {formatDateVn(b.checkOutDate)} ({b.nights} đêm,{' '}
                           {b.guestCount} khách)
                         </span>
                       </div>
@@ -1690,7 +1825,7 @@ const AdminDashboardPage = (): React.JSX.Element => {
                           </span>
                         </p>
                         <p className='text-slate-500'>
-                          Hiệu lực: {v.validFrom} → {v.validTo}
+                          Hiệu lực: {formatDateVn(v.validFrom)} → {formatDateVn(v.validTo)}
                         </p>
                       </div>
                     </div>
@@ -2012,15 +2147,66 @@ const AdminDashboardPage = (): React.JSX.Element => {
             </div>
 
             <div>
-              <label className='mb-1 block text-xs font-bold text-slate-700'>
-                Danh sách URL Hình ảnh (cách nhau bởi dấu phẩy)
-              </label>
-              <input
-                type='text'
+              <div className='mb-1 flex flex-wrap items-center justify-between gap-2'>
+                <label className='block text-xs font-bold text-slate-700'>
+                  Hình ảnh Phòng (Dán link ibb.co, Imgur, Google Drive, link bất kỳ HOẶC tải ảnh từ máy)
+                </label>
+                <label className='cursor-pointer rounded-lg bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-200 hover:bg-indigo-100'>
+                  📁 + Chọn ảnh từ máy tính (Không giới hạn MP)
+                  <input
+                    type='file'
+                    accept='image/*'
+                    multiple
+                    onChange={handleRoomLocalFileUpload}
+                    className='hidden'
+                  />
+                </label>
+              </div>
+              <textarea
+                rows={2}
                 value={imageUrlsText}
                 onChange={(e) => setImageUrlsText(e.target.value)}
+                onBlur={async () => {
+                  if (imageUrlsText.trim()) {
+                    const resolved = await resolveShareUrlsInText(imageUrlsText)
+                    setImageUrlsText(resolved)
+                  }
+                }}
+                placeholder='Dán link ảnh bất kỳ (VD: https://ibb.co/xc809bj hoặc https://i.ibb.co/...) mỗi dòng 1 link'
                 className='w-full rounded-xl border border-slate-300 px-3 py-2 text-xs'
               />
+              {imageUrlsText.trim() && (
+                <div className='mt-2 flex flex-wrap gap-2'>
+                  {imageUrlsText
+                    .split(/\n|,(?!\/)/)
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                    .reduce<string[]>((acc, item) => {
+                      if (
+                        item.startsWith('base64,') &&
+                        acc.length > 0 &&
+                        acc[acc.length - 1].startsWith('data:image/')
+                      ) {
+                        acc[acc.length - 1] = `${acc[acc.length - 1]},${item}`
+                      } else {
+                        acc.push(item)
+                      }
+                      return acc
+                    }, [])
+                    .map((imgSrc, idx) => (
+                      <div
+                        key={idx}
+                        className='relative h-14 w-20 overflow-hidden rounded-lg border border-slate-200 bg-slate-100'
+                      >
+                        <img
+                          src={imgSrc}
+                          alt={`Preview ${idx + 1}`}
+                          className='h-full w-full object-cover'
+                        />
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -2161,15 +2347,49 @@ const AdminDashboardPage = (): React.JSX.Element => {
             </div>
 
             <div>
-              <label className='mb-1 block text-xs font-bold text-slate-700'>
-                URL Hình ảnh mẫu mặc định
-              </label>
+              <div className='mb-1 flex flex-wrap items-center justify-between gap-2'>
+                <label className='block text-xs font-bold text-slate-700'>
+                  Hình ảnh mẫu mặc định (Dán link ibb.co, Imgur, link bất kỳ HOẶC tải từ máy)
+                </label>
+                <label className='cursor-pointer rounded-lg bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-200 hover:bg-indigo-100'>
+                  📁 + Chọn ảnh từ máy tính
+                  <input
+                    type='file'
+                    accept='image/*'
+                    onChange={handleCategoryLocalFileUpload}
+                    className='hidden'
+                  />
+                </label>
+              </div>
               <input
                 type='text'
                 value={catDefaultImageUrl}
                 onChange={(e) => setCatDefaultImageUrl(e.target.value)}
+                onBlur={async () => {
+                  if (catDefaultImageUrl.trim()) {
+                    const resolved = await resolveShareUrlsInText(
+                      catDefaultImageUrl
+                    )
+                    setCatDefaultImageUrl(resolved)
+                  }
+                }}
+                placeholder='VD: https://ibb.co/xc809bj hoặc chọn ảnh từ máy tính'
                 className='w-full rounded-xl border border-slate-300 px-3 py-2 text-xs'
               />
+              {catDefaultImageUrl.trim() && (
+                <div className='mt-2 flex items-center gap-3'>
+                  <div className='h-14 w-24 overflow-hidden rounded-lg border border-slate-200 bg-slate-100'>
+                    <img
+                      src={catDefaultImageUrl}
+                      alt='Category preview'
+                      className='h-full w-full object-cover'
+                    />
+                  </div>
+                  <span className='text-[11px] text-slate-500'>
+                    Xem trước hình ảnh hạng phòng
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -2351,11 +2571,10 @@ const AdminDashboardPage = (): React.JSX.Element => {
                 <label className='mb-1 block text-xs font-bold text-slate-700'>
                   Ngày bắt đầu *
                 </label>
-                <input
-                  type='date'
+                <VnDateInput
                   required
                   value={vValidFrom}
-                  onChange={(e) => setVValidFrom(e.target.value)}
+                  onChange={(val) => setVValidFrom(val)}
                   className='w-full rounded-xl border border-slate-300 px-3 py-2 text-xs'
                 />
               </div>
@@ -2363,11 +2582,10 @@ const AdminDashboardPage = (): React.JSX.Element => {
                 <label className='mb-1 block text-xs font-bold text-slate-700'>
                   Ngày kết thúc *
                 </label>
-                <input
-                  type='date'
+                <VnDateInput
                   required
                   value={vValidTo}
-                  onChange={(e) => setVValidTo(e.target.value)}
+                  onChange={(val) => setVValidTo(val)}
                   className='w-full rounded-xl border border-slate-300 px-3 py-2 text-xs'
                 />
               </div>
@@ -2594,7 +2812,7 @@ const AdminDashboardPage = (): React.JSX.Element => {
                           #{b.bookingCode} — {b.roomName} (Phòng {b.roomNumber})
                         </p>
                         <p className='text-slate-500'>
-                          {b.checkInDate} → {b.checkOutDate} ({b.nights} đêm)
+                          {formatDateVn(b.checkInDate)} → {formatDateVn(b.checkOutDate)} ({b.nights} đêm)
                         </p>
                       </div>
                       <div className='text-right'>
@@ -2660,10 +2878,10 @@ const AdminDashboardPage = (): React.JSX.Element => {
               <div>
                 <span className='block text-slate-400'>Thông tin lưu trú</span>
                 <p>
-                  Nhận phòng: <strong>{detailBooking.checkInDate}</strong>
+                  Nhận phòng: <strong>{formatDateVn(detailBooking.checkInDate)}</strong>
                 </p>
                 <p>
-                  Trả phòng: <strong>{detailBooking.checkOutDate}</strong> (
+                  Trả phòng: <strong>{formatDateVn(detailBooking.checkOutDate)}</strong> (
                   {detailBooking.nights} đêm)
                 </p>
                 <p>

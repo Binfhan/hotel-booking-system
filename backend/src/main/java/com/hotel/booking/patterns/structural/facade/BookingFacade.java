@@ -18,6 +18,7 @@ import com.hotel.booking.patterns.creational.builder.BookingOrder;
 import com.hotel.booking.patterns.structural.decorator.BookingCostBuilderService;
 import com.hotel.booking.patterns.structural.decorator.BookingCostBuilderService.DecoratedCostResult;
 import com.hotel.booking.repository.BookingRepository;
+import com.hotel.booking.repository.RoomRepository;
 import com.hotel.booking.repository.UserRepository;
 import com.hotel.booking.service.RoomService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +43,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BookingFacade {
 
+    private static final DateTimeFormatter VN_DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     private final RoomService roomService;
+    private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final BookingCostBuilderService costBuilderService;
@@ -154,17 +159,36 @@ public class BookingFacade {
             stateResolver.applyAction(booking, BookingAction.CONFIRM);
         }
 
+        roomRepository.save(room);
         Booking savedBooking = bookingRepository.save(booking);
 
-        // 5. Observer Pattern: Notify all observers
+        // 5. Observer Pattern: Notify all observers with full invoice breakdown
+        String addonSummary = savedBooking.getAddonServices().isEmpty()
+                ? "Không có"
+                : savedBooking.getAddonServices().stream()
+                        .map(s -> String.format("%s (%,.0f VNĐ)", s.getServiceName(), s.getPrice()))
+                        .collect(Collectors.joining(", "));
+        String voucherSummary = savedBooking.getVoucher() != null
+                ? String.format("%s (-%,.0f VNĐ)", savedBooking.getVoucher().getCode(), savedBooking.getDiscountAmount())
+                : "Không áp dụng (0 VNĐ)";
+
         String msg = String.format(
-                "Đặt phòng %s (%s) từ %s đến %s thành công. Tổng thanh toán: %,.0f VNĐ. Trạng thái: %s.",
+                "Đặt phòng %s (Phòng %s - %s) thành công | Nhận phòng: %s -> Trả phòng: %s (%d đêm, %d khách) | "
+                        + "Tiền phòng gốc: %,.0f VNĐ | Dịch vụ cộng thêm: %s | Giảm giá Voucher: %s | "
+                        + "TỔNG THANH TOÁN: %,.0f VNĐ | Trạng thái đơn: %s | Trạng thái phòng: %s.",
                 room.getName(),
                 room.getRoomNumber(),
-                savedBooking.getCheckInDate(),
-                savedBooking.getCheckOutDate(),
+                room.getLocation(),
+                savedBooking.getCheckInDate().format(VN_DATE_FMT),
+                savedBooking.getCheckOutDate().format(VN_DATE_FMT),
+                order.getStayNights(),
+                savedBooking.getGuestCount(),
+                savedBooking.getBaseRoomCost(),
+                addonSummary,
+                voucherSummary,
                 savedBooking.getTotalAmount(),
-                savedBooking.getStatus()
+                savedBooking.getStatus(),
+                room.getStatus()
         );
         eventPublisher.notifyObservers(new BookingEvent("BOOKING_CREATED", savedBooking, msg));
 
@@ -186,13 +210,18 @@ public class BookingFacade {
 
         BookingStatus previousStatus = booking.getStatus();
         stateResolver.applyAction(booking, action);
+        if (booking.getRoom() != null) {
+            roomRepository.save(booking.getRoom());
+        }
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             BookingResponse cancelledResponse = toBookingResponse(booking);
             String cancelMessage = String.format(
-                    "Đơn đặt phòng #%s (Phòng %s) đã được hủy và xóa khỏi danh sách đặt phòng đang hoạt động.",
+                    "Đơn đặt phòng #%s (Phòng %s) đã được hủy. Trạng thái phòng %s đã tự động chuyển về %s.",
                     booking.getBookingCode(),
-                    booking.getRoom().getRoomNumber()
+                    booking.getRoom().getRoomNumber(),
+                    booking.getRoom().getRoomNumber(),
+                    booking.getRoom().getStatus()
             );
             eventPublisher.notifyObservers(new BookingEvent("BOOKING_CANCELLED", booking, cancelMessage));
             bookingRepository.delete(booking);
@@ -202,11 +231,12 @@ public class BookingFacade {
         Booking saved = bookingRepository.save(booking);
 
         String message = String.format(
-                "Đơn đặt phòng #%s (Phòng %s) đã chuyển trạng thái từ %s sang %s.",
+                "Đơn đặt phòng #%s (Phòng %s) đã chuyển trạng thái từ %s sang %s (Trạng thái phòng hiện tại: %s).",
                 saved.getBookingCode(),
                 saved.getRoom().getRoomNumber(),
                 previousStatus,
-                saved.getStatus()
+                saved.getStatus(),
+                saved.getRoom().getStatus()
         );
         eventPublisher.notifyObservers(new BookingEvent("BOOKING_STATE_CHANGED", saved, message));
 
@@ -224,12 +254,21 @@ public class BookingFacade {
         if (newStatus == PaymentStatus.PAID && payment.getPaidAt() == null) {
             payment.setPaidAt(LocalDateTime.now());
         }
+        // Tự động chuyển trạng thái đơn từ PENDING -> CONFIRMED khi thanh toán chuyển sang PAID
+        if (newStatus == PaymentStatus.PAID && booking.getStatus() == BookingStatus.PENDING) {
+            stateResolver.applyAction(booking, BookingAction.CONFIRM);
+            if (booking.getRoom() != null) {
+                roomRepository.save(booking.getRoom());
+            }
+        }
         Booking saved = bookingRepository.save(booking);
 
         String message = String.format(
-                "Trạng thái thanh toán của đơn #%s đã được cập nhật thành %s.",
+                "Trạng thái thanh toán của đơn #%s đã được cập nhật thành %s (Trạng thái đơn: %s, Trạng thái phòng: %s).",
                 saved.getBookingCode(),
-                newStatus
+                newStatus,
+                saved.getStatus(),
+                saved.getRoom().getStatus()
         );
         eventPublisher.notifyObservers(new BookingEvent("PAYMENT_STATUS_UPDATED", saved, message));
 

@@ -2,16 +2,19 @@ package com.hotel.booking.config;
 
 import com.hotel.booking.dto.RoomDtos.CreateOrUpdateRoomRequest;
 import com.hotel.booking.entity.RoomCategory;
+import com.hotel.booking.entity.RoomImage;
 import com.hotel.booking.entity.User;
 import com.hotel.booking.enums.*;
 import com.hotel.booking.repository.BookingRepository;
 import com.hotel.booking.repository.RoomCategoryRepository;
+import com.hotel.booking.repository.RoomRepository;
 import com.hotel.booking.repository.UserRepository;
 import com.hotel.booking.repository.VoucherRepository;
 import com.hotel.booking.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,14 +29,51 @@ public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final RoomCategoryRepository roomCategoryRepository;
+    private final RoomRepository roomRepository;
     private final VoucherRepository voucherRepository;
     private final BookingRepository bookingRepository;
     private final RoomService roomService;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
     public void run(String... args) {
+        // 0. Automatically migrate image URL columns to LONGTEXT in MySQL to prevent Data Truncation on Base64/long URLs
+        try {
+            jdbcTemplate.execute("ALTER TABLE room_images MODIFY COLUMN image_url LONGTEXT NOT NULL");
+            jdbcTemplate.execute("ALTER TABLE room_categories MODIFY COLUMN default_image_url LONGTEXT");
+            log.info("Verified MySQL LONGTEXT columns for room_images.image_url and room_categories.default_image_url");
+        } catch (Exception e) {
+            log.warn("Could not alter image columns to LONGTEXT (may already be updated or non-MySQL dialect): {}", e.getMessage());
+        }
+
+        // Normalize any existing share links (e.g., ibb.co, drive.google.com, imgur.com) already stored in DB
+        roomCategoryRepository.findAll().forEach(cat -> {
+            if (cat.getDefaultImageUrl() != null && !cat.getDefaultImageUrl().startsWith("data:image/")) {
+                String normalized = roomService.normalizeImageUrl(cat.getDefaultImageUrl());
+                if (!normalized.equals(cat.getDefaultImageUrl())) {
+                    cat.setDefaultImageUrl(normalized);
+                    roomCategoryRepository.save(cat);
+                }
+            }
+        });
+        roomRepository.findAll().forEach(room -> {
+            boolean changed = false;
+            for (RoomImage img : room.getImages()) {
+                if (img.getImageUrl() != null && !img.getImageUrl().startsWith("data:image/")) {
+                    String normalized = roomService.normalizeImageUrl(img.getImageUrl());
+                    if (!normalized.equals(img.getImageUrl())) {
+                        img.setImageUrl(normalized);
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                roomRepository.save(room);
+            }
+        });
+
         // 1. Clean up any previously cancelled bookings
         bookingRepository.deleteByStatus(BookingStatus.CANCELLED);
 
