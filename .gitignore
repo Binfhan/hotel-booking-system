@@ -25,3 +25,6 @@ target/
 .DS_Store
 Thumbs.db
 
+# Local reports
+BAO_CAO_DESIGN_PATTERNS_VA_SOLID.md
+
