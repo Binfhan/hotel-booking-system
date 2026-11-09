@@ -12,7 +12,7 @@
 - Chạy với MySQL (`localhost:3306`, tự động tạo database `hotel_booking_db`):
   ```bash
   cd backend
-  mvn spring-boot:run
+  .\mvn spring-boot:run
   ```
 - Hoặc chạy nhanh phục vụ thuyết trình/demo không cần bật MySQL (dùng H2 in-memory chế độ tương thích MySQL):
   ```bash
