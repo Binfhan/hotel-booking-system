@@ -1051,10 +1051,6 @@ const AdminDashboardPage = (): React.JSX.Element => {
                 <h2 className='text-2xl font-extrabold text-slate-900'>
                   Dashboard Thống kê Tổng quan
                 </h2>
-                <p className='text-xs text-slate-500'>
-                  Theo dõi số lượng phòng, công suất khai thác, đơn đặt phòng và
-                  doanh thu thực tế
-                </p>
               </div>
               <button
                 type='button'
@@ -1244,10 +1240,6 @@ const AdminDashboardPage = (): React.JSX.Element => {
               <h2 className='text-2xl font-extrabold text-slate-900'>
                 Quản lý Đơn Đặt phòng ({filteredBookings.length} đơn)
               </h2>
-              <p className='text-xs text-slate-500'>
-                Theo dõi các phòng đã được đặt, thông tin khách hàng, thanh toán
-                và chuyển đổi trạng thái theo State Pattern
-              </p>
             </div>
 
             {/* Filter Bar */}
@@ -1487,10 +1479,6 @@ const AdminDashboardPage = (): React.JSX.Element => {
                 <h2 className='text-2xl font-extrabold text-slate-900'>
                   Quản lý Danh sách Phòng ({filteredRooms.length} phòng)
                 </h2>
-                <p className='text-xs text-slate-500'>
-                  Thêm phòng mới (liên kết trực tiếp Hạng phòng & Factory
-                  Method), sửa, xóa và lọc phòng đa tiêu chí
-                </p>
               </div>
               <button
                 type='button'
@@ -1659,10 +1647,6 @@ const AdminDashboardPage = (): React.JSX.Element => {
                 <h2 className='text-2xl font-extrabold text-slate-900'>
                   Quản lý Hạng phòng / Loại phòng ({categories.length} hạng)
                 </h2>
-                <p className='text-xs text-slate-500'>
-                  Cấu hình ở đây sẽ liên kết trực tiếp với mục chọn Hạng phòng
-                  khi Thêm/Sửa Phòng (Factory Method) và phạm vi áp dụng Voucher
-                </p>
               </div>
               <button
                 type='button'
@@ -1752,10 +1736,6 @@ const AdminDashboardPage = (): React.JSX.Element => {
                 <h2 className='text-2xl font-extrabold text-slate-900'>
                   Quản lý Mã giảm giá - Vouchers ({vouchers.length} mã)
                 </h2>
-                <p className='text-xs text-slate-500'>
-                  Tạo mã giảm giá áp dụng cho Tất cả phòng hoặc giới hạn cho các
-                  Hạng phòng cụ thể (Strategy Pattern)
-                </p>
               </div>
               <button
                 type='button'
@@ -1863,10 +1843,6 @@ const AdminDashboardPage = (): React.JSX.Element => {
                 <h2 className='text-2xl font-extrabold text-slate-900'>
                   Quản lý Người dùng ({filteredUsers.length} tài khoản)
                 </h2>
-                <p className='text-xs text-slate-500'>
-                  Thêm, sửa, xóa người dùng, phân quyền User/Admin, khóa tài
-                  khoản và xem hồ sơ chi tiết kèm lịch sử đặt phòng
-                </p>
               </div>
               <button
                 type='button'

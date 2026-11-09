@@ -353,9 +353,6 @@ const RoomDetailPage = (): React.JSX.Element => {
           <h2 className='text-lg font-bold text-slate-900'>
             Đặt phòng Trực tuyến
           </h2>
-          <p className='text-xs text-slate-500'>
-            Tích hợp Builder + Decorator + Strategy + Facade Pattern
-          </p>
 
           <div className='mt-4 space-y-4'>
             <div className='grid grid-cols-2 gap-3'>
@@ -590,9 +587,6 @@ const RoomDetailPage = (): React.JSX.Element => {
           <div className='w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'>
             <div className='flex items-center justify-between bg-indigo-900 px-6 py-4 text-white'>
               <div>
-                <span className='text-[11px] font-semibold uppercase tracking-wider text-indigo-200'>
-                  Strategy Pattern • Online Payment Gateway
-                </span>
                 <h3 className='text-base font-bold'>
                   {paymentMethod === 'E_WALLET'
                     ? 'Cổng Thanh toán QR Ví điện tử / Ngân hàng'

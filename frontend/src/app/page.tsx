@@ -247,10 +247,6 @@ const HomePage = (): React.JSX.Element => {
             <h2 className='text-xl font-bold text-slate-900'>
               Danh sách Phòng Khách sạn ({rooms.length} phòng)
             </h2>
-            <p className='text-xs text-slate-500'>
-              Bộ lọc tìm kiếm được xử lý qua Builder Pattern
-              (RoomSearchCriteria) tại tầng Backend
-            </p>
           </div>
         </div>
 

@@ -32,15 +32,9 @@ export const Navbar = ({ children }: AppShellProps): React.JSX.Element => {
         <div className='mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6'>
           <div className='flex items-center gap-8'>
             <Link href='/' className='flex items-center gap-2.5'>
-              <span className='flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow-sm'>
-                HB
-              </span>
               <div>
                 <span className='block text-base font-bold tracking-tight text-slate-900'>
                   Grand Luxury Hotel
-                </span>
-                <span className='block text-xs text-slate-500'>
-                  Spring Boot MVC • 6+ Design Patterns
                 </span>
               </div>
             </Link>
