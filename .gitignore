@@ -25,5 +25,7 @@ target/
 .DS_Store
 Thumbs.db
 
-
-
+# Spring Boot local configuration files (keep example template)
+**/src/main/resources/application.yml
+**/src/main/resources/application-*.yml
+!**/src/main/resources/application.example.yml
